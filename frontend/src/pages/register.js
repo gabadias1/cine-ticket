@@ -12,7 +12,7 @@ export default function Register() {
   const isFormValid =
     nome && email && senha && confirmSenha && senha === confirmSenha;
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -21,11 +21,20 @@ export default function Register() {
       return;
     }
 
-    
-    console.log({ nome, email, senha });
-    router.push("/"); 
+     try {
+      const res = await fetch("http://localhost:3001/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: senha }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setSuccess(data.message);
+      setTimeout(() => router.push("/login"), 1500); // Redireciona para login após sucesso
+    } catch (err) {
+      setError(err.message);
+    }
   };
-
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <form

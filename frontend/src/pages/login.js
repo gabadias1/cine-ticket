@@ -9,15 +9,22 @@ export default function Login() {
 
   const isFormValid = email && senha;
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
 
     
-    if (email === "teste@mail.com" && senha === "123456") {
-      router.push("/"); 
-    } else {
-      setError("E-mail ou senha inválidos");
+ try {
+      const res = await fetch("http://localhost:3001/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: senha }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      router.push("/");
+    } catch (err) {
+      setError(err.message);
     }
   };
 
