@@ -79,6 +79,12 @@ export default function Filmes() {
               >
                 Filmes
               </button>
+              <button
+                onClick={() => router.push('/eventos')}
+                className="text-white hover:text-blue-200 transition-colors"
+              >
+                Eventos
+              </button>
             </nav>
           </div>
           <button
