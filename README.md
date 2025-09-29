@@ -62,7 +62,7 @@ Curso: Bacharelado em Ciência da Computação (BCC)
 
 ```bash
 # Clone o repositório
-git clone https://github.com/seu-usuario/cine-ticket.git
+git clone https://github.com/gabadias1/cine-ticket.git
 
 # Entre no diretório
 cd cine-ticket
