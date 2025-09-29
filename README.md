@@ -57,9 +57,8 @@ Com o site, é possível:
 Script de conveniência para subir ambos:
 
 ```bash
-<<<<<<< Updated upstream
 # Clone o repositório
-git clone https://github.com/seu-usuario/cine-ticket.git
+git clone https://github.com/gabadias1/cine-ticket.git
 
 # Entre no diretório
 cd cine-ticket
@@ -67,7 +66,6 @@ cd cine-ticket
 # Instale as dependências
 =======
 # Na raiz do projeto 
->>>>>>> Stashed changes
 npm install
 npm run setup   
 
@@ -91,7 +89,4 @@ npm run dev:all
 ## Licença
 
 Este projeto está sob a licença MIT.
-<<<<<<< Updated upstream
->>>>>>> index_ingressos
-=======
->>>>>>> Stashed changes
+
