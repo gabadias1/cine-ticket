@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import Slider from 'react-slick';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 
 export default function Home() {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('emCartaz');
 
@@ -44,22 +46,22 @@ export default function Home() {
     },
     {
       id: 2,
-      title: 'Pobres Criaturas',
-      genre: 'Drama/Fantasia',
-      duration: '2h 21min',
-      rating: '16',
+      title: 'Demon Slayer: Kimetsu No Yaiba - Castelo Infinito',
+      genre: 'Animação',
+      duration: '2h 35min',
+      rating: '18',
       imdbRating: '8.4',
-      image: '/images/movies/pobres-criaturas.jpg',
+      image: '/images/movies/demonslayer.jpg',
       sessions: ['14:00', '16:40', '19:20']
     },
     {
       id: 3,
-      title: 'Godzilla e Kong',
-      genre: 'Ação/Aventura',
+      title: 'Os caras malvados 2',
+      genre: 'Animação',
       duration: '2h 32min',
       rating: '12',
       imdbRating: '8.2',
-      image: '/images/movies/godzilla-kong.jpg',
+      image: '/images/movies/oscaras2.jpg',
       sessions: ['13:30', '16:00', '21:00']
     },
     {
@@ -95,7 +97,6 @@ export default function Home() {
     }
   ];
 
-  // Simular carregamento de dados
   useEffect(() => {
     setTimeout(() => {
       setIsLoading(false);
@@ -122,7 +123,25 @@ export default function Home() {
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
       <header className="bg-blue-900 text-white py-4 px-6 shadow-lg">
-        <h1 className="text-3xl font-bold">CineTicket</h1>
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center space-x-8">
+            <h1 className="text-3xl font-bold">CineTicket</h1>
+            <nav className="hidden md:flex space-x-6">
+              <button
+                onClick={() => router.push("/filmes")}
+                className="text-white hover:text-blue-200 transition-colors"
+              >
+                Filmes
+              </button>
+            </nav>
+          </div>
+          <button
+            onClick={() => router.push("/login")}
+            className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-full transition-colors"
+          >
+            Entrar
+          </button>
+        </div>
       </header>
 
       {/* Featured Carousel */}

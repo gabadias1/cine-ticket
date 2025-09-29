@@ -1,35 +1,54 @@
-#🎬 CineTicket – Compra de ingressos de cinema e eventos online
+# 🎬 CineTicket
 
-Projeto Integrador (PI) – Universidade Tecnológica Federal do Paraná – Câmpus Campo Mourão (UTFPR-CM)
+Projeto Integrador (PI) – Universidade Tecnológica Federal do Paraná – Câmpus Campo Mourão (UTFPR-CM)  
 Curso: Bacharelado em Ciência da Computação (BCC)
 
-##📌 Sobre o Projeto
+## � Tecnologias
 
-CineTicket é uma plataforma web em desenvolvimento, com o objetivo de facilitar a compra de ingressos de cinema e eventos em geral.
+### Frontend
+- **Next.js** - Framework React para desenvolvimento web moderno
+- **React** - Biblioteca JavaScript para construção de interfaces
+- **Tailwind CSS** - Framework CSS utilitário para design responsivo
+- **@tailwindcss/aspect-ratio** - Plugin para controle de proporções de imagens
 
-Através do site, é possível:
+## ✨ Funcionalidades
 
-Navegar pelos filmes em cartaz por cidade e cinema;
+### Para Usuários
+- 🎥 Visualização de filmes em cartaz
+- 🗓️ Consulta de horários e sessões
+- 🎟️ Compra de ingressos online
+- 👤 Gerenciamento de perfil
+- 💺 Seleção de assentos
+- 🔍 Busca e filtros de filmes
 
-Selecionar sessões e assentos disponíveis;
+## 📦 Como Executar
 
-Comprar ingressos de forma rápida e segura;
+```bash
+# Clone o repositório
+git clone https://github.com/seu-usuario/cine-ticket.git
 
-Gerenciar o perfil do usuário.
+# Entre no diretório
+cd cine-ticket
 
-##🎯 Objetivos
+# Instale as dependências
+npm install
 
-Criar uma experiência simples e intuitiva para usuários finais;
+# Inicie o servidor de desenvolvimento
+npm run dev
+```
 
-Disponibilizar informações atualizadas sobre filmes, sessões e salas;
+## 🌐 Requisitos
 
-Permitir reserva de assentos;
+- Node.js 18+
+- npm ou yarn
+- Navegador web moderno
 
-Oferecer painel administrativo para gerenciamento de filmes, sessões e relatórios de vendas.
+## 👥 Equipe
 
-##🛠️ Tecnologias Utilizadas
-Camada	Tecnologias
-Frontend	HTML, Node.js, Tailwind CSS
-Backend	Node.js (Express)
-Banco de Dados	MongoDB
-APIs Externas	Futuras integrações (QR Code, pagamentos)
+- Gabriel Dias
+- João Pedro
+- Kallil
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT.
