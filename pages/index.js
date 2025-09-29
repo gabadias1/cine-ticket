@@ -7,31 +7,12 @@ import 'slick-carousel/slick/slick-theme.css';
 export default function Home() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('emCartaz');
+  const { tab } = router.query;
+  const [activeTab, setActiveTab] = useState(tab || 'emCartaz');
 
-  const featuredEvents = [
-    {
-      id: 1,
-      title: 'Taylor Swift: The Eras Tour',
-      description: 'Um espetáculo musical imperdível',
-      image: '/images/movies/taylor-swift.jpg',
-      date: '15/10/2024'
-    },
-    {
-      id: 2,
-      title: 'Show do Red Hot Chili Peppers',
-      description: 'Turnê mundial em São Paulo',
-      image: '/images/movies/rhcp.jpg',
-      date: '20/11/2024'
-    },
-    {
-      id: 3,
-      title: 'Cirque du Soleil: Alegría',
-      description: 'O espetáculo mais mágico do mundo',
-      image: '/images/movies/cirque.jpg',
-      date: '05/12/2024'
-    }
-  ];
+  
+
+  
 
   const moviesInTheaters = [
     {
@@ -103,6 +84,12 @@ export default function Home() {
     }, 1500);
   }, []);
 
+  useEffect(() => {
+    if (tab) {
+      setActiveTab(tab);
+    }
+  }, [tab]);
+
   const sliderSettings = {
     dots: true,
     infinite: true,
@@ -115,8 +102,7 @@ export default function Home() {
 
   const tabs = [
     { id: 'emCartaz', label: 'Em Cartaz' },
-    { id: 'emBreve', label: 'Em Breve' },
-    { id: 'eventos', label: 'Eventos' }
+    { id: 'emBreve', label: 'Em Breve' }
   ];
 
   return (
@@ -127,13 +113,19 @@ export default function Home() {
           <div className="flex items-center space-x-8">
             <h1 className="text-3xl font-bold">CineTicket</h1>
             <nav className="hidden md:flex space-x-6">
-              <button
-                onClick={() => router.push("/filmes")}
-                className="text-white hover:text-blue-200 transition-colors"
-              >
-                Filmes
-              </button>
-            </nav>
+            <button
+              onClick={() => router.push("/filmes")}
+              className="text-white hover:text-blue-200 transition-colors"
+            >
+              Filmes
+            </button>
+            <button
+              onClick={() => router.push('/eventos')}
+              className="text-white hover:text-blue-200 transition-colors"
+            >
+              Eventos
+            </button>
+          </nav>
           </div>
           <button
             onClick={() => router.push("/login")}
@@ -275,47 +267,7 @@ export default function Home() {
           </div>
         )}
 
-        {activeTab === 'eventos' && (
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Eventos Especiais</h2>
-            <div className="mb-8">
-              <Slider {...sliderSettings}>
-                {featuredEvents.map((event) => (
-                  <div key={event.id} className="px-2">
-                    <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-                      <div className="relative">
-                        <div className="aspect-w-16 aspect-h-9">
-                          <img
-                            src={event.image}
-                            alt={event.title}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = 'https://via.placeholder.com/1200x600?text=Evento';
-                            }}
-                          />
-                        </div>
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-6">
-                          <h3 className="text-2xl font-bold text-white mb-2">{event.title}</h3>
-                          <p className="text-gray-200 mb-2">{event.description}</p>
-                          <div className="flex items-center text-gray-300">
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            {event.date}
-                          </div>
-                          <button className="mt-4 bg-blue-600 text-white py-2 px-6 rounded-full hover:bg-blue-700 transition-colors">
-                            Comprar Ingressos
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </Slider>
-            </div>
-          </div>
-        )}
+{/* Eventos movidos para /eventos */}
 
         {activeTab === 'emBreve' && (
           <div>
