@@ -5,11 +5,47 @@ export default function Eventos() {
   const router = useRouter();
 
   const [events] = useState([
-    { id: 101, name: 'Lollapalooza Brasil', description: 'Festival com grandes atrações nacionais e internacionais.', image: 'https://via.placeholder.com/800x450?text=Lollapalooza', city: 'São Paulo', category: 'Festival', location: 'Autódromo de Interlagos, São Paulo - SP', date: '2025-11-15', time: '14:00' },
-    { id: 102, name: 'Stand-up com Afonso Padilha', description: 'Noite de risadas com um dos maiores nomes do stand-up.', image: 'https://via.placeholder.com/800x450?text=Stand-up', city: 'Curitiba', category: 'Stand-up', location: 'Teatro Positivo, Curitiba - PR', date: '2025-10-20', time: '20:00' },
-    { id: 103, name: 'Peça: Hamlet', description: 'Clássico de Shakespeare em nova montagem.', image: 'https://via.placeholder.com/800x450?text=Teatro+Hamlet', city: 'Rio de Janeiro', category: 'Teatro', location: 'Theatro Municipal, Rio de Janeiro - RJ', date: '2025-10-05', time: '19:30' },
-    { id: 104, name: 'Show: Anitta ao vivo', description: 'Turnê nacional com hits do momento.', image: 'https://via.placeholder.com/800x450?text=Show+Anitta', city: 'São Paulo', category: 'Show', location: 'Allianz Parque, São Paulo - SP', date: '2025-12-01', time: '21:00' },
+    { id: 1, 
+      name: 'Travis Scott - Festival', 
+      description: 'Festival de shows com a apresentação principal, Travis Scott.', 
+      image: 'images/events/showtravis.jpg', 
+      city: 'São Paulo', 
+      category: 'Festival', 
+      location: 'Autódromo de Interlagos, São Paulo - SP', 
+      date: '2025-11-15', 
+      time: '14:00' },
+
+    { id: 1, name: 'Os Melhores do Mundo', 
+      description: 'Noite de risadas com um dos maiores nomes do stand-up.', 
+      image: 'images/events/osmm.jpeg', 
+      city: 'Curitiba', 
+      category: 'Stand-up', 
+      location: 'Teatro Positivo, Curitiba - PR', 
+      date: '2025-10-20', 
+      time: '20:00' },
+
+    { id: 1, 
+      name: 'Peça: Hamlet', 
+      description: 'Clássico de Shakespeare em nova montagem.', 
+      image: 'images/events/hamlet.jpg', 
+      city: 'Rio de Janeiro', 
+      category: 'Teatro', 
+      location: 'Theatro Municipal, Rio de Janeiro - RJ', 
+      date: '2025-10-05', 
+      time: '19:30' },
+
+    { id: 1, 
+      name: 'BGS 2025', 
+      description: 'BRASIL GAME SHOWWWW - O maior evento de games da América Latina.', 
+      image: 'images/events/BGS-LOGO.jpg', 
+      city: 'São Paulo', 
+      category: 'Evento', 
+      location: 'Distrito Anhembi, São Paulo - SP', 
+      date: '2025-12-01', 
+      time: '14;00' },
+
   ]);
+
   const [filterCity, setFilterCity] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterDate, setFilterDate] = useState('');
