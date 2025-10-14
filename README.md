@@ -45,42 +45,22 @@ Com o site, é possível:
 - Seleção de assentos
 - Busca e filtros de filmes
 
-## Requisitos
-
-- Node.js 18+ (verifique com `node -v`)
-- npm (ou yarn)
-
 ## Como executar
 
-### 1) Frontend + Backend juntos
-
-Script de conveniência para subir ambos:
-
 ```bash
-# Clone o repositório
-git clone https://github.com/gabadias1/cine-ticket.git
+# Subir frontend + backend
+docker-compose -f docker-compose.dev.yml up --build
 
-# Entre no diretório
-cd cine-ticket
-
-# Instale as dependências
-=======
-# Na raiz do projeto 
-npm install
-npm run setup   
-
-npm run dev:all
 # Frontend: http://localhost:3000
 # Backend:  http://localhost:3001
 ```
 
-## 🌐 Requisitos
+## Requisitos
 
-- Node.js 18+
-- npm ou yarn
+- Docker e Docker Compose
 - Navegador web moderno
 
-## 👥 Equipe
+## Equipe
 
 - Gabriel Dias
 - João Pedro
