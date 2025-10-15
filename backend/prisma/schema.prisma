@@ -1,0 +1,78 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  password  String
+  tickets   Ticket[]
+  createdAt DateTime @default(now())
+}
+
+model Cinema {
+  id      Int     @id @default(autoincrement())
+  name    String
+  city    String
+  halls   Hall[]
+}
+
+model Hall {
+  id       Int      @id @default(autoincrement())
+  name     String
+  capacity Int
+  cinemaId Int
+  cinema   Cinema   @relation(fields: [cinemaId], references: [id])
+  sessions Session[]
+  seats    Seat[]
+}
+
+model Movie {
+  id        Int      @id @default(autoincrement())
+  title     String
+  synopsis  String?
+  duration  Int      // minutes
+  rating    String?
+  sessions  Session[]
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  movieId   Int
+  hallId    Int
+  startsAt  DateTime
+  price     Float
+  movie     Movie    @relation(fields: [movieId], references: [id])
+  hall      Hall     @relation(fields: [hallId], references: [id])
+  tickets   Ticket[]
+}
+
+model Seat {
+  id      Int    @id @default(autoincrement())
+  hallId  Int
+  row     String
+  number  Int
+  hall    Hall   @relation(fields: [hallId], references: [id])
+  tickets Ticket[]
+  @@unique([hallId, row, number])
+}
+
+model Ticket {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  sessionId Int
+  seatId    Int
+  price     Float
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+  session   Session  @relation(fields: [sessionId], references: [id])
+  seat      Seat     @relation(fields: [seatId], references: [id])
+  @@unique([sessionId, seatId])
+}

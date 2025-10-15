@@ -1,0 +1,29 @@
+version: '3.9'
+services:
+  backend:
+    build:
+      context: ./cine-ticket/backend
+      dockerfile: Dockerfile.dev
+    container_name: cine-ticket-backend
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./cine-ticket/backend:/app
+      - /app/node_modules
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+
+  frontend:
+    build:
+      context: ./cine-ticket
+      dockerfile: Dockerfile.dev
+    container_name: cine-ticket-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./cine-ticket:/app
+      - /app/node_modules
+    command: npm run dev
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:4000
