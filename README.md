@@ -49,7 +49,7 @@ Com o site, é possível:
 
 ```bash
 # Subir frontend + backend
-docker-compose -f docker-compose.dev.yml up --build
+docker compose -f docker-compose.dev.yml up --build
 
 # Frontend: http://localhost:3000
 # Backend:  http://localhost:3001
