@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:14-alpine
+    container_name: cine-ticket-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: cine_ticket
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cine-ticket-network
+
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cine-ticket-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/cine_ticket
+      - NODE_ENV=development
+    depends_on:
+      - postgres
+    networks:
+      - cine-ticket-network
+
+  frontend:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: cine-ticket-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3001
+    depends_on:
+      - backend
+    networks:
+      - cine-ticket-network
+
+networks:
+  cine-ticket-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

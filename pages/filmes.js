@@ -12,7 +12,35 @@ export default function Filmes() {
       rating: '14',
       imdbRating: '8.8',
       image: '/images/movies/invocacao4.jpg',
-      sessions: ['15:30', '18:00', '20:30']
+      sessions: [
+        {
+          time: '15:30',
+          room: {
+            name: 'Sala IMAX',
+            type: 'IMAX',
+            features: ['Tela gigante IMAX', 'Som Dolby Atmos', 'Poltronas reclináveis'],
+            price: 45.00
+          }
+        },
+        {
+          time: '18:00',
+          room: {
+            name: 'Sala VIP',
+            type: 'VIP',
+            features: ['Serviço de comida', 'Poltronas super confortáveis', 'Menu exclusivo'],
+            price: 55.00
+          }
+        },
+        {
+          time: '20:30',
+          room: {
+            name: 'Sala 3D',
+            type: '3D',
+            features: ['Projeção 3D de última geração', 'Som surround'],
+            price: 35.00
+          }
+        }
+      ]
     },
     {
       id: 2,
@@ -22,7 +50,35 @@ export default function Filmes() {
       rating: '18',
       imdbRating: '8.4',
       image: '/images/movies/demonslayer.jpg',
-      sessions: ['14:00', '16:40', '19:20']
+      sessions: [
+        {
+          time: '14:00',
+          room: {
+            name: 'Sala IMAX',
+            type: 'IMAX',
+            features: ['Tela gigante IMAX', 'Som Dolby Atmos', 'Poltronas reclináveis'],
+            price: 45.00
+          }
+        },
+        {
+          time: '16:40',
+          room: {
+            name: 'Sala D-BOX',
+            type: 'D-BOX',
+            features: ['Poltronas com movimento', 'Som imersivo', 'Efeitos especiais'],
+            price: 50.00
+          }
+        },
+        {
+          time: '19:20',
+          room: {
+            name: 'Sala 4DX',
+            type: '4DX',
+            features: ['Efeitos especiais 4D', 'Movimentos sincronizados', 'Experiência imersiva'],
+            price: 60.00
+          }
+        }
+      ]
     },
     {
       id: 3,
@@ -32,7 +88,35 @@ export default function Filmes() {
       rating: '12',
       imdbRating: '8.2',
       image: '/images/movies/oscaras2.jpg',
-      sessions: ['13:30', '16:00', '21:00']
+      sessions: [
+        {
+          time: '13:30',
+          room: {
+            name: 'Sala Kids',
+            type: 'KIDS',
+            features: ['Poltronas coloridas', 'Playground', 'Ambiente família'],
+            price: 30.00
+          }
+        },
+        {
+          time: '16:00',
+          room: {
+            name: 'Sala 3D',
+            type: '3D',
+            features: ['Projeção 3D de última geração', 'Som surround'],
+            price: 35.00
+          }
+        },
+        {
+          time: '21:00',
+          room: {
+            name: 'Sala Standard',
+            type: 'STANDARD',
+            features: ['Projeção digital', 'Som digital'],
+            price: 25.00
+          }
+        }
+      ]
     },
     {
       id: 4,
@@ -42,7 +126,35 @@ export default function Filmes() {
       rating: 'L',
       imdbRating: '7.9',
       image: '/images/movies/kungfu-panda4.jpg',
-      sessions: ['14:30', '16:30', '18:30']
+      sessions: [
+        {
+          time: '14:30',
+          room: {
+            name: 'Sala Kids',
+            type: 'KIDS',
+            features: ['Poltronas coloridas', 'Playground', 'Ambiente família'],
+            price: 30.00
+          }
+        },
+        {
+          time: '16:30',
+          room: {
+            name: 'Sala IMAX 3D',
+            type: 'IMAX3D',
+            features: ['IMAX 3D', 'Som Dolby Atmos', 'Tela gigante'],
+            price: 50.00
+          }
+        },
+        {
+          time: '18:30',
+          room: {
+            name: 'Sala D-BOX',
+            type: 'D-BOX',
+            features: ['Poltronas com movimento', 'Som imersivo', 'Efeitos especiais'],
+            price: 50.00
+          }
+        }
+      ]
     },
     {
       id: 5,
@@ -136,21 +248,50 @@ export default function Filmes() {
                 <div className="space-y-2">
                   {movie.sessions ? (
                     <>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        Hoje às {movie.sessions.join(', ')}
+                      <div className="mb-3">
+                        <div className="text-sm font-semibold text-gray-700 mb-2">Sessões disponíveis:</div>
+                        {movie.sessions.map((session, index) => (
+                          <div key={index} className="bg-gray-50 rounded-lg p-3 mb-2 hover:bg-gray-100 transition-colors">
+                            <div className="flex justify-between items-center mb-2">
+                              <div className="flex items-center">
+                                <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span className="font-medium">{session.time}</span>
+                              </div>
+                              <span className="text-blue-600 font-semibold">
+                                R$ {session.room.price.toFixed(2)}
+                              </span>
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-gray-800 mb-1">
+                                {session.room.name}
+                                <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                                  {session.room.type}
+                                </span>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {session.room.features.join(' • ')}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => router.push({
+                                pathname: `/assentos/${movie.id}`,
+                                query: {
+                                  time: session.time,
+                                  room: session.room.name
+                                }
+                              })}
+                              className="mt-2 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 text-sm"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                              </svg>
+                              <span>Selecionar assentos</span>
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                      <button
-                        onClick={() => router.push(`/assentos/${movie.id}`)}
-                        className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                        </svg>
-                        <span>Comprar Ingresso</span>
-                      </button>
                     </>
                   ) : (
                     <>
