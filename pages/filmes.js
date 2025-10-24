@@ -61,13 +61,9 @@ export default function Filmes() {
     if (selectedGenre) {
       filtered = filtered.filter(movie => {
         if (movie.genres) {
-          try {
-            const movieGenres = JSON.parse(movie.genres);
-            return movieGenres.some(genre => genre.id.toString() === selectedGenre);
-          } catch (error) {
-            console.error('Erro ao parsear gêneros:', error);
-            return false;
-          }
+          // Gêneros estão armazenados como string simples (ex: "Terror, Suspense")
+          const movieGenres = movie.genres.split(', ').map(genre => genre.trim());
+          return movieGenres.some(genre => genre.toLowerCase().includes(selectedGenre.toLowerCase()));
         }
         return false;
       });
@@ -334,22 +330,14 @@ export default function Filmes() {
                     </p>
                     {movie.genres && (
                       <div className="flex flex-wrap gap-1 mb-3">
-                        {(() => {
-                          try {
-                            const genres = JSON.parse(movie.genres);
-                            return genres.map((genre, index) => (
-                              <span
-                                key={index}
-                                className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full"
-                              >
-                                {genre.name}
-                              </span>
-                            ));
-                          } catch (error) {
-                            console.error('Erro ao parsear gêneros:', error);
-                            return null;
-                          }
-                        })()}
+                        {movie.genres.split(', ').map((genre, index) => (
+                          <span
+                            key={index}
+                            className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full"
+                          >
+                            {genre.trim()}
+                          </span>
+                        ))}
                       </div>
                     )}
                     <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
