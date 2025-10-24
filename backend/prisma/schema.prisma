@@ -1,5 +1,5 @@
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -68,13 +68,15 @@ model Movie {
   id          Int       @id @default(autoincrement())
   title       String
   synopsis    String?
-  duration    Int       // minutes
+  duration    Int
   rating      String?
   imageUrl    String?
-  trailerUrl  String?   // URL do trailer
-  releaseDate DateTime  // Data de lançamento
-  genres      String[]  // Array de gêneros
+  trailerUrl  String?
+  releaseDate DateTime
+  genres      String[]
   sessions    Session[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Event {

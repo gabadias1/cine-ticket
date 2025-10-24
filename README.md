@@ -1,72 +1,105 @@
-# CineTicket – Plataforma de compra de ingressos
+# CineTicket – Plataforma de Compra de Ingressos
 
-Projeto Integrador (PI) – Universidade Tecnológica Federal do Paraná – Câmpus Campo Mourão (UTFPR-CM)
-Curso: Bacharelado em Ciência da Computação (BCC)
+**Projeto Integrador (PI)** – Universidade Tecnológica Federal do Paraná – Câmpus Campo Mourão (UTFPR-CM)  
+**Curso:** Bacharelado em Ciência da Computação (BCC)
 
 ## Sobre o Projeto
 
-CineTicket é uma plataforma web em desenvolvimento, com o objetivo de facilitar a compra de ingressos de cinema e eventos em geral.
+CineTicket é uma plataforma web completa para compra de ingressos de cinema e eventos, desenvolvida com tecnologias modernas e arquitetura full-stack.
 
-Com o site, é possível:
-- Navegar pelos filmes em cartaz por cidade e cinemas
-- Selecionar sessões e assentos disponíveis
-- Comprar ingressos de forma rápida e segura
-- Gerenciar o Perfil do usuário
+### Funcionalidades
 
-## Objetivos
-
-- Criar uma experiência simples e intuitiva para usuários finais
-- Disponibilizar informações atualizadas sobre filmes, sessões e salas
-- Permitir reserva de assentos
-- Oferecer painel administrativo para gerenciamento de filmes, sessões e relatórios de vendas
+- **Catálogo de Filmes**: Visualização de filmes em cartaz
+- **Sistema de Ingressos**: Compra online com seleção de assentos
+- **Autenticação**: Login e registro de usuários
+- **Múltiplos Cinemas**: Suporte a diferentes locais
+- **Interface Responsiva**: Design moderno e intuitivo
+- **Filtros e Busca**: Encontre filmes e eventos facilmente
 
 ## Tecnologias
 
 ### Frontend
-- Next.js (React)
-- React 18
-- Tailwind CSS
-- @tailwindcss/aspect-ratio
+- **Next.js 14** - Framework React
+- **React 18** - Biblioteca de interface
+- **Tailwind CSS** - Framework de estilos
+- **React Slick** - Carrossel de imagens
+- **Context API** - Gerenciamento de estado
 
 ### Backend
-- Node.js (Express)
-- CORS, Body Parser
+- **Node.js** - Runtime JavaScript
+- **Express.js** - Framework web
+- **Prisma ORM** - Gerenciamento de banco de dados
+- **SQLite** - Banco de dados
+- **CORS** - Cross-origin resource sharing
 
-### Banco de Dados
-- Atualmente: API em memória (sem persistência)
-- Referência de esquema SQL: `database/init.sql`
+### Infraestrutura
+- **Docker** - Containerização
+- **Docker Compose** - Orquestração de containers
 
-## Funcionalidades
+## Como Executar
 
-- Visualização de filmes em cartaz
-- Consulta de horários e sessões
-- Compra de ingressos online
-- Gerenciamento de Perfil
-- Seleção de assentos
-- Busca e filtros de filmes
+### Pré-requisitos
+- Docker e Docker Compose instalados
+- Navegador web moderno
 
-## Como executar
-
+### Execução 
 ```bash
-# Subir frontend + backend
+# Clone o repositório
+git clone <repository-url>
+cd cine-ticket
+
+# Execute com Docker
 docker compose -f docker-compose.dev.yml up --build
 
+# Acesse a aplicação
 # Frontend: http://localhost:3000
 # Backend:  http://localhost:3001
 ```
 
-## Requisitos
 
-- Docker e Docker Compose
-- Navegador web moderno
+## 🔧 API Endpoints
+
+### Autenticação
+- `POST /auth/login` - Login de usuário
+- `POST /auth/register` - Registro de usuário
+
+### Filmes
+- `GET /movies` - Listar filmes
+- `POST /movies` - Criar filme
+
+### Cinemas
+- `GET /cinemas` - Listar cinemas
+- `POST /cinemas` - Criar cinema
+
+### Sessões
+- `GET /sessions` - Listar sessões
+- `POST /sessions` - Criar sessão
+
+### Ingressos
+- `POST /purchase` - Comprar ingresso
+
+
+## Arquitetura
+
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   Backend       │    │   Database      │
+│   (Next.js)     │◄──►│   (Express)     │◄──►│   (SQLite)      │
+│   Port: 3000    │    │   Port: 3001    │    │   (Prisma)      │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
 
 ## Equipe
 
-- Gabriel Dias
-- João Pedro
-- Kalil
+- **Gabriel Dias**
+- **João Pedro** 
+- **Kalil**
 
 ## Licença
 
 Este projeto está sob a licença MIT.
+
+---
+
+**🎬 CineTicket** - Sua plataforma completa para compra de ingressos!
 
