@@ -18,7 +18,6 @@ async function main() {
   const user = await prisma.user.create({
     data: {
       email: 'teste@mail.com',
-      name: 'Usuário Teste',
       password: '123456'
     }
   });
@@ -27,14 +26,30 @@ async function main() {
   const cinema1 = await prisma.cinema.create({
     data: {
       name: 'Cine Center',
-      city: 'Campo Mourão'
+      city: 'Campo Mourão',
+      state: 'PR',
+      address: 'Rua Principal, 123'
     }
   });
 
   const cinema2 = await prisma.cinema.create({
     data: {
       name: 'Cinemark',
-      city: 'Campo Mourão'
+      city: 'Campo Mourão',
+      state: 'PR',
+      address: 'Avenida Central, 456'
+    }
+  });
+
+  // Criar template de sala
+  const template1 = await prisma.hallTemplate.create({
+    data: {
+      name: 'Template Standard',
+      type: 'STANDARD',
+      layout: '{"rows": 10, "seatsPerRow": 15}',
+      rowCount: 10,
+      seatsPerRow: 15,
+      features: 'Som digital, Projeção HD'
     }
   });
 
@@ -43,7 +58,9 @@ async function main() {
     data: {
       name: 'Sala 1',
       capacity: 150,
-      cinemaId: cinema1.id
+      cinemaId: cinema1.id,
+      templateId: template1.id,
+      features: 'Som digital, Projeção HD'
     }
   });
 
@@ -51,7 +68,9 @@ async function main() {
     data: {
       name: 'Sala 2',
       capacity: 200,
-      cinemaId: cinema2.id
+      cinemaId: cinema2.id,
+      templateId: template1.id,
+      features: 'Som digital, Projeção HD'
     }
   });
 
@@ -65,7 +84,8 @@ async function main() {
       seats1.push({
         hallId: hall1.id,
         row: String.fromCharCode(65 + row), // A, B, C, etc.
-        number: seat
+        number: seat,
+        position: JSON.stringify({ x: seat, y: row })
       });
     }
   }
@@ -84,7 +104,8 @@ async function main() {
       seats2.push({
         hallId: hall2.id,
         row: String.fromCharCode(65 + row),
-        number: seat
+        number: seat,
+        position: JSON.stringify({ x: seat, y: row })
       });
     }
   }
@@ -99,7 +120,9 @@ async function main() {
       title: 'Invocação do mal 4',
       synopsis: 'Filme de terror baseado em eventos reais',
       duration: 166, // 2h 46min
-      rating: '14'
+      rating: '14',
+      releaseDate: new Date('2024-01-01'),
+      genres: 'Terror, Suspense'
     }
   });
 
@@ -108,7 +131,9 @@ async function main() {
       title: 'Demon Slayer: Kimetsu No Yaiba - Castelo Infinito',
       synopsis: 'Animação japonesa baseada no mangá',
       duration: 155, // 2h 35min
-      rating: '18'
+      rating: '18',
+      releaseDate: new Date('2024-02-01'),
+      genres: 'Anime, Ação, Aventura'
     }
   });
 
@@ -117,7 +142,9 @@ async function main() {
       title: 'Os caras malvados 2',
       synopsis: 'Animação de comédia',
       duration: 152, // 2h 32min
-      rating: '12'
+      rating: '12',
+      releaseDate: new Date('2024-03-01'),
+      genres: 'Animação, Comédia'
     }
   });
 
@@ -131,37 +158,43 @@ async function main() {
       movieId: movie1.id,
       hallId: hall1.id,
       startsAt: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 15, 30),
-      price: 30.00
+      price: 30.00,
+      language: 'Dublado'
     },
     {
       movieId: movie1.id,
       hallId: hall1.id,
       startsAt: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 18, 0),
-      price: 30.00
+      price: 30.00,
+      language: 'Legendado'
     },
     {
       movieId: movie1.id,
       hallId: hall1.id,
       startsAt: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 20, 30),
-      price: 30.00
+      price: 30.00,
+      language: 'Dublado'
     },
     {
       movieId: movie2.id,
       hallId: hall2.id,
       startsAt: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 14, 0),
-      price: 25.00
+      price: 25.00,
+      language: 'Dublado'
     },
     {
       movieId: movie2.id,
       hallId: hall2.id,
       startsAt: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 16, 40),
-      price: 25.00
+      price: 25.00,
+      language: 'Legendado'
     },
     {
       movieId: movie3.id,
       hallId: hall1.id,
       startsAt: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 13, 30),
-      price: 20.00
+      price: 20.00,
+      language: 'Dublado'
     }
   ];
 
