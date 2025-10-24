@@ -18,15 +18,23 @@ export default function Filmes() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [moviesData, genresData] = await Promise.all([
-          api.getMovies(),
-          api.getTMDBGenres()
-        ]);
+        console.log('Iniciando carregamento de dados...');
         
+        // Carregar filmes primeiro
+        const moviesData = await api.getMovies();
         console.log('Filmes carregados:', moviesData);
         setMovies(moviesData);
         setFilteredMovies(moviesData);
-        setGenres(genresData.genres || []);
+        
+        // Carregar gêneros separadamente (não é crítico)
+        try {
+          const genresData = await api.getTMDBGenres();
+          setGenres(genresData.genres || []);
+        } catch (genresError) {
+          console.warn('Erro ao carregar gêneros:', genresError);
+          setGenres([]);
+        }
+        
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
         // Se não conseguir carregar filmes, mostrar lista vazia
