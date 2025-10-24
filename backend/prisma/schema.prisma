@@ -36,10 +36,10 @@ model HallTemplate {
   id          Int       @id @default(autoincrement())
   name        String    // Ex: "IMAX Premium SP", "3D Standard RJ"
   type        String    // IMAX, 3D, VIP, Standard, etc
-  layout      Json      // Layout da sala em formato JSON
+  layout      String    // Layout da sala em formato JSON (como string)
   rowCount    Int       // Número de fileiras
   seatsPerRow Int       // Assentos por fileira
-  features    String[]  // Características da sala
+  features    String    // Características da sala (separadas por vírgula)
   halls       Hall[]    // Salas que usam este template
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -55,7 +55,7 @@ model Hall {
   capacity        Int
   status          String        @default("ACTIVE") // ACTIVE, MAINTENANCE, CLOSED
   description     String?
-  features        String[]      // Características específicas desta sala
+  features        String        // Características específicas desta sala (separadas por vírgula)
   cinema          Cinema        @relation(fields: [cinemaId], references: [id])
   template        HallTemplate  @relation(fields: [templateId], references: [id])
   sessions        Session[]
@@ -73,7 +73,7 @@ model Movie {
   imageUrl    String?
   trailerUrl  String?
   releaseDate DateTime
-  genres      String[]
+  genres      String        // Gêneros separados por vírgula
   sessions    Session[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -94,7 +94,7 @@ model Event {
   state        String
   capacity     Int
   category     String        // Categoria do evento (Show, Teatro, Standup, etc)
-  features     String[]      // Características especiais do evento
+  features     String        // Características especiais do evento (separadas por vírgula)
   tickets      EventTicket[]
   latitude     Float?        // Para localização no mapa
   longitude    Float?        // Para localização no mapa
@@ -132,7 +132,7 @@ model Seat {
   row         String
   number      Int
   type        String    @default("STANDARD") // STANDARD, VIP, WHEELCHAIR, COUPLE, LOVESEAT
-  position    Json      // Posição x,y no layout da sala
+  position    String    // Posição x,y no layout da sala (como string JSON)
   status      String    @default("AVAILABLE") // AVAILABLE, OCCUPIED, MAINTENANCE, BLOCKED
   isLeft      Boolean?  // Para assentos duplos (loveseat), indica se é o assento esquerdo
   isRight     Boolean?  // Para assentos duplos (loveseat), indica se é o assento direito
