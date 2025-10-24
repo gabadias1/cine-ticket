@@ -19,7 +19,8 @@ ENV DATABASE_URL="file:./dev.db"
 ENV PORT=3001
 
 RUN npx prisma generate
-RUN npx prisma migrate dev --name init || true
+RUN rm -f prisma/dev.db || true
+RUN npx prisma migrate dev --name init
 RUN npm run seed
 
 # Mudar para usuário não-root
