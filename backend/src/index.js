@@ -7,7 +7,11 @@ const tmdbService = require('./tmdbService');
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    'http://localhost:3000',
+    'http://frontend:3000',
+    'http://frontend-1:3000'
+  ],
   credentials: true
 }));
 
