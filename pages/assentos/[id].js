@@ -1,8 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import { useAuth } from "../../contexts/AuthContext";
+import api from "../../utils/api";
 
 export default function PageAssentos() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { id } = router.query;
     // layout base: X = vazio, A = disponível, R = reservado
     const layout = [
         ["X", "X", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A", "A", "X", "X"],
@@ -52,13 +58,33 @@ export default function PageAssentos() {
         setSelecionados(new Map());
     }
 
-    function pagar() {
+    async function pagar() {
         if (selecionados.size === 0) {
             alert("Nenhum assento selecionado!");
             return;
         }
-        const pedido = Array.from(selecionados.entries()).map(([id, info]) => ({ id, ...info }));
-        alert("Pedido:\n" + JSON.stringify(pedido, null, 2));
+        
+        if (!user) {
+            alert("Você precisa estar logado para comprar ingressos!");
+            router.push("/login");
+            return;
+        }
+
+        try {
+            // Simular compra - em uma implementação real, você faria uma chamada para a API
+            const pedido = Array.from(selecionados.entries()).map(([seatId, info]) => ({ 
+                seatId, 
+                ...info 
+            }));
+            
+            // Aqui você faria a chamada real para a API:
+            // await api.purchaseTicket(user.id, sessionId, seatId);
+            
+            alert("Ingressos comprados com sucesso!\n" + JSON.stringify(pedido, null, 2));
+            router.push("/");
+        } catch (error) {
+            alert("Erro ao comprar ingressos: " + error.message);
+        }
     }
 
     const total = Array.from(selecionados.values()).reduce((s, v) => s + v.preco, 0);

@@ -9,70 +9,152 @@ generator client {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  password  String
-  tickets   Ticket[]
-  createdAt DateTime @default(now())
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  password     String
+  tickets      Ticket[]
+  eventTickets EventTicket[]
+  createdAt    DateTime      @default(now())
 }
 
 model Cinema {
-  id      Int     @id @default(autoincrement())
-  name    String
-  city    String
-  halls   Hall[]
+  id          Int       @id @default(autoincrement())
+  name        String
+  city        String
+  state       String    // Estado (SP, RJ, etc)
+  address     String
+  description String?
+  imageUrl    String?
+  halls       Hall[]
+  latitude    Float?    // Para localização no mapa
+  longitude   Float?    // Para localização no mapa
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model HallTemplate {
+  id          Int       @id @default(autoincrement())
+  name        String    // Ex: "IMAX Premium SP", "3D Standard RJ"
+  type        String    // IMAX, 3D, VIP, Standard, etc
+  layout      String    // Layout da sala em formato JSON (como string)
+  rowCount    Int       // Número de fileiras
+  seatsPerRow Int       // Assentos por fileira
+  features    String    // Características da sala (separadas por vírgula)
+  halls       Hall[]    // Salas que usam este template
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model Hall {
-  id       Int      @id @default(autoincrement())
-  name     String
-  capacity Int
-  cinemaId Int
-  cinema   Cinema   @relation(fields: [cinemaId], references: [id])
-  sessions Session[]
-  seats    Seat[]
+  id              Int           @id @default(autoincrement())
+  name            String
+  cinemaId        Int
+  templateId      Int
+  isAccessible    Boolean       @default(true)    // Indica se tem acesso para cadeirantes
+  hasLoveseats    Boolean       @default(false)   // Indica se tem assentos duplos
+  capacity        Int
+  status          String        @default("ACTIVE") // ACTIVE, MAINTENANCE, CLOSED
+  description     String?
+  features        String        // Características específicas desta sala (separadas por vírgula)
+  cinema          Cinema        @relation(fields: [cinemaId], references: [id])
+  template        HallTemplate  @relation(fields: [templateId], references: [id])
+  sessions        Session[]
+  seats           Seat[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 }
 
 model Movie {
-  id        Int      @id @default(autoincrement())
-  title     String
-  synopsis  String?
-  duration  Int      // minutes
-  rating    String?
-  sessions  Session[]
+  id          Int       @id @default(autoincrement())
+  title       String
+  synopsis    String?
+  duration    Int
+  rating      String?
+  imageUrl    String?
+  trailerUrl  String?
+  releaseDate DateTime
+  genres      String        // Gêneros separados por vírgula
+  sessions    Session[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Event {
+  id           Int           @id @default(autoincrement())
+  title        String
+  description  String
+  date         DateTime
+  endDate      DateTime?     // Para eventos com mais de um dia
+  imageUrl     String?
+  bannerUrl    String?       // Imagem banner do evento
+  price        Float
+  location     String
+  address      String
+  city         String
+  state        String
+  capacity     Int
+  category     String        // Categoria do evento (Show, Teatro, Standup, etc)
+  features     String        // Características especiais do evento (separadas por vírgula)
+  tickets      EventTicket[]
+  latitude     Float?        // Para localização no mapa
+  longitude    Float?        // Para localização no mapa
+}
+
+model EventTicket {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  eventId     Int
+  price       Float
+  ticketType  String   // VIP, Pista, Camarote, etc
+  seatNumber  String?  // Opcional, depende do tipo de evento
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+  event       Event    @relation(fields: [eventId], references: [id])
 }
 
 model Session {
-  id        Int      @id @default(autoincrement())
-  movieId   Int
-  hallId    Int
-  startsAt  DateTime
-  price     Float
-  movie     Movie    @relation(fields: [movieId], references: [id])
-  hall      Hall     @relation(fields: [hallId], references: [id])
-  tickets   Ticket[]
+  id          Int       @id @default(autoincrement())
+  movieId     Int
+  hallId      Int
+  startsAt    DateTime
+  price       Float
+  language    String    // Dublado, Legendado
+  movie       Movie     @relation(fields: [movieId], references: [id])
+  hall        Hall      @relation(fields: [hallId], references: [id])
+  tickets     Ticket[]
+  isSpecial   Boolean   @default(false)  // Sessões especiais (pré-estreia, etc)
+  status      String    @default("ACTIVE") // ACTIVE, CANCELLED, SOLD_OUT
 }
 
 model Seat {
-  id      Int    @id @default(autoincrement())
-  hallId  Int
-  row     String
-  number  Int
-  hall    Hall   @relation(fields: [hallId], references: [id])
-  tickets Ticket[]
+  id          Int       @id @default(autoincrement())
+  hallId      Int
+  row         String
+  number      Int
+  type        String    @default("STANDARD") // STANDARD, VIP, WHEELCHAIR, COUPLE, LOVESEAT
+  position    String    // Posição x,y no layout da sala (como string JSON)
+  status      String    @default("AVAILABLE") // AVAILABLE, OCCUPIED, MAINTENANCE, BLOCKED
+  isLeft      Boolean?  // Para assentos duplos (loveseat), indica se é o assento esquerdo
+  isRight     Boolean?  // Para assentos duplos (loveseat), indica se é o assento direito
+  hall        Hall      @relation(fields: [hallId], references: [id])
+  tickets     Ticket[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   @@unique([hallId, row, number])
 }
 
 model Ticket {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  sessionId Int
-  seatId    Int
-  price     Float
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
-  session   Session  @relation(fields: [sessionId], references: [id])
-  seat      Seat     @relation(fields: [seatId], references: [id])
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  sessionId   Int
+  seatId      Int
+  price       Float
+  status      String    @default("ACTIVE") // ACTIVE, USED, CANCELLED, REFUNDED
+  qrCode      String?   // QR Code para validação
+  createdAt   DateTime  @default(now())
+  validatedAt DateTime?
+  user        User      @relation(fields: [userId], references: [id])
+  session     Session   @relation(fields: [sessionId], references: [id])
+  seat        Seat      @relation(fields: [seatId], references: [id])
   @@unique([sessionId, seatId])
 }
