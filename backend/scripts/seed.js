@@ -1,9 +1,11 @@
+require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
+const { syncMaximumMoviesFromTMDB } = require('./syncMaximumMovies');
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Iniciando seed do banco de dados...');
+  console.log('Iniciando seed do banco de dados...');
 
   // Limpar dados existentes
   await prisma.ticket.deleteMany();
@@ -17,6 +19,7 @@ async function main() {
   // Criar usuário de teste
   const user = await prisma.user.create({
     data: {
+      name: 'Usuário Teste',
       email: 'teste@mail.com',
       password: '123456'
     }
@@ -73,6 +76,55 @@ async function main() {
       features: 'Som digital, Projeção HD'
     }
   });
+
+  const sessionConfigs = [
+    { hallId: hall1.id, hour: 15, minute: 30, language: 'Dublado', price: 32.5 },
+    { hallId: hall2.id, hour: 19, minute: 45, language: 'Legendado', price: 34.9 }
+  ];
+
+  const ensureSessionsForMovies = async () => {
+    const movies = await prisma.movie.findMany({
+      include: { sessions: true }
+    });
+
+    const baseDate = new Date();
+    baseDate.setHours(0, 0, 0, 0);
+
+    const sessionsToCreate = [];
+
+    for (const [movieIndex, movie] of movies.entries()) {
+      for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
+        const targetDate = new Date(baseDate);
+        targetDate.setDate(baseDate.getDate() + dayOffset);
+
+        const hasSessionForDay = movie.sessions.some((session) => {
+          const sessionDate = new Date(session.startsAt);
+          sessionDate.setHours(0, 0, 0, 0);
+          return sessionDate.getTime() === targetDate.getTime();
+        });
+
+        if (!hasSessionForDay) {
+          const config = sessionConfigs[(movieIndex + dayOffset) % sessionConfigs.length];
+          const startsAt = new Date(targetDate);
+          startsAt.setHours(config.hour, config.minute, 0, 0);
+
+          sessionsToCreate.push({
+            movieId: movie.id,
+            hallId: config.hallId,
+            startsAt,
+            price: config.price,
+            language: config.language
+          });
+        }
+      }
+    }
+
+    if (sessionsToCreate.length) {
+      await prisma.session.createMany({ data: sessionsToCreate });
+    }
+
+    console.log(`🎟️ Sessões garantidas: ${sessionsToCreate.length} novas para ${movies.length} filmes.`);
+  };
 
   // Criar assentos para a sala 1
   const seats1 = [];
@@ -148,72 +200,38 @@ async function main() {
     }
   });
 
-  // Criar sessões
-  const today = new Date();
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  await ensureSessionsForMovies();
 
-  const sessions = [
-    {
-      movieId: movie1.id,
-      hallId: hall1.id,
-      startsAt: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 15, 30),
-      price: 30.00,
-      language: 'Dublado'
-    },
-    {
-      movieId: movie1.id,
-      hallId: hall1.id,
-      startsAt: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 18, 0),
-      price: 30.00,
-      language: 'Legendado'
-    },
-    {
-      movieId: movie1.id,
-      hallId: hall1.id,
-      startsAt: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 20, 30),
-      price: 30.00,
-      language: 'Dublado'
-    },
-    {
-      movieId: movie2.id,
-      hallId: hall2.id,
-      startsAt: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 14, 0),
-      price: 25.00,
-      language: 'Dublado'
-    },
-    {
-      movieId: movie2.id,
-      hallId: hall2.id,
-      startsAt: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 16, 40),
-      price: 25.00,
-      language: 'Legendado'
-    },
-    {
-      movieId: movie3.id,
-      hallId: hall1.id,
-      startsAt: new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 13, 30),
-      price: 20.00,
-      language: 'Dublado'
+  const hasTMDBCredentials = process.env.TMDB_API_KEY && process.env.TMDB_ACCESS_TOKEN;
+
+  if (hasTMDBCredentials) {
+    console.log('\n Sincronizando catálogo completo da TMDB...');
+    try {
+      await syncMaximumMoviesFromTMDB();
+
+      console.log('\n Garantindo sessões para todos os filmes...');
+      await ensureSessionsForMovies();
+    } catch (error) {
+      console.error(' Falha ao sincronizar catálogo TMDB:', error.message);
     }
-  ];
-
-  for (const session of sessions) {
-    await prisma.session.create({
-      data: session
-    });
+  } else {
+    console.warn('\n  Variáveis TMDB_API_KEY/TMDB_ACCESS_TOKEN não presentes. Pulando sincronização TMDB.');
   }
 
-  console.log('✅ Seed concluído com sucesso!');
-  console.log(`👤 Usuário criado: ${user.email}`);
-  console.log(`🎬 Filmes criados: ${movie1.title}, ${movie2.title}, ${movie3.title}`);
-  console.log(`🏢 Cinemas criados: ${cinema1.name}, ${cinema2.name}`);
-  console.log(`🎭 Sessões criadas: ${sessions.length}`);
+  console.log('\nSeed concluído com sucesso!');
+  console.log(`Usuário criado: ${user.email}`);
+  console.log(`Filmes manuais criados: ${movie1.title}, ${movie2.title}, ${movie3.title}`);
+  console.log(`Cinemas criados: ${cinema1.name}, ${cinema2.name}`);
+
+  const totalMovies = await prisma.movie.count();
+  const totalSessions = await prisma.session.count();
+  console.log(`🎬 Total de filmes no banco: ${totalMovies}`);
+  console.log(`🎭 Total de sessões geradas (7 dias): ${totalSessions}`);
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Erro no seed:', e);
+    console.error(' Erro no seed:', e);
     process.exit(1);
   })
   .finally(async () => {

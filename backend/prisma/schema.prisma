@@ -10,11 +10,13 @@ generator client {
 
 model User {
   id           Int           @id @default(autoincrement())
+  name         String        @default("Usuário")
   email        String        @unique
   password     String
   tickets      Ticket[]
   eventTickets EventTicket[]
   createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 }
 
 model Cinema {
@@ -65,18 +67,24 @@ model Hall {
 }
 
 model Movie {
-  id          Int       @id @default(autoincrement())
-  title       String
-  synopsis    String?
-  duration    Int
-  rating      String?
-  imageUrl    String?
-  trailerUrl  String?
-  releaseDate DateTime
-  genres      String        // Gêneros separados por vírgula
-  sessions    Session[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id               Int        @id @default(autoincrement())
+  tmdbId           Int?       @unique
+  title            String
+  synopsis         String?
+  duration         Int
+  rating           String?
+  imageUrl         String?
+  posterPath       String?
+  backdropPath     String?
+  trailerUrl       String?
+  releaseDate      DateTime?
+  genres           String?
+  voteAverage      Float?
+  voteCount        Int?
+  originalLanguage String?
+  sessions         Session[]
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 }
 
 model Event {

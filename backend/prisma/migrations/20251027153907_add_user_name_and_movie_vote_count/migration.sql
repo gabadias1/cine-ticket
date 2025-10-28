@@ -15,9 +15,10 @@ CREATE TABLE "new_User" (
     "name" TEXT NOT NULL DEFAULT "Usuário",
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-INSERT INTO "new_User" ("createdAt", "email", "id", "password", "name") SELECT "createdAt", "email", "id", "password", "Usuário" FROM "User";
+INSERT INTO "new_User" ("createdAt", "email", "id", "password", "name", "updatedAt") SELECT "createdAt", "email", "id", "password", "Usuário", COALESCE("updatedAt", CURRENT_TIMESTAMP) FROM "User";
 DROP TABLE "User";
 ALTER TABLE "new_User" RENAME TO "User";
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");

@@ -1,4 +1,12 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const getBaseURL = () => {
+  if (typeof window === 'undefined') {
+    return process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://backend:3001';
+  }
+
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+};
+
+const API_BASE_URL = getBaseURL();
 
 class ApiService {
   constructor() {

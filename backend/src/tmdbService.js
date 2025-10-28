@@ -213,6 +213,8 @@ class TMDBService {
   }
 
   convertTMDBMovieToLocal(tmdbMovie) {
+    const genres = tmdbMovie.genres?.map((genre) => genre.name).filter(Boolean) || [];
+
     return {
       tmdbId: tmdbMovie.id,
       title: tmdbMovie.title,
@@ -225,7 +227,7 @@ class TMDBService {
       voteAverage: tmdbMovie.vote_average,
       voteCount: tmdbMovie.vote_count,
       originalLanguage: tmdbMovie.original_language,
-      genres: tmdbMovie.genres ? JSON.stringify(tmdbMovie.genres) : null
+      genres: genres.length ? genres.join(', ') : null
     };
   }
 

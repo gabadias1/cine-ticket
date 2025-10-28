@@ -182,7 +182,12 @@ export default function Eventos() {
                   <path d="M18 4l2 4h-7l-2-4h7zM4 4l2 4H2l2-4zm2 16l-2-4h7l2 4H6zm14-4l2-4h-7l-2 4h7z"/>
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 cursor-pointer" onClick={() => router.push("/")}>CineTicket</h1>
+              <h1
+                className="text-2xl font-bold text-gray-900 cursor-pointer"
+                onClick={() => router.push("/")}
+              >
+                CineTicket
+              </h1>
             </div>
             
             {/* Location Selector */}
@@ -206,7 +211,7 @@ export default function Eventos() {
               </button>
               <button
                 onClick={() => router.push("/eventos")}
-                className="text-blue-600 hover:text-blue-700 transition-colors font-medium underline underline-offset-4"
+                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
               >
                 Eventos
               </button>

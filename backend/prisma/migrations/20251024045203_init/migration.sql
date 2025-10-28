@@ -28,7 +28,7 @@ CREATE TABLE "HallTemplate" (
     "seatsPerRow" INTEGER NOT NULL,
     "features" TEXT NOT NULL,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- CreateTable
@@ -96,7 +96,7 @@ CREATE TABLE "new_Hall" (
     "description" TEXT,
     "features" TEXT NOT NULL,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Hall_cinemaId_fkey" FOREIGN KEY ("cinemaId") REFERENCES "Cinema" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT "Hall_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "HallTemplate" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
@@ -120,10 +120,12 @@ CREATE TABLE "new_Movie" (
     "releaseDate" DATETIME NOT NULL,
     "genres" TEXT NOT NULL,
     "voteAverage" REAL,
+    "originalLanguage" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL
 );
-INSERT INTO "new_Movie" ("createdAt", "duration", "genres", "id", "rating", "releaseDate", "synopsis", "title", "updatedAt", "tmdbId", "posterPath", "voteAverage") SELECT "createdAt", "duration", "genres", "id", "rating", "releaseDate", "synopsis", "title", "updatedAt", "tmdbId", "posterPath", "voteAverage" FROM "Movie";
+INSERT INTO "new_Movie" ("createdAt", "duration", "genres", "id", "rating", "releaseDate", "synopsis", "title", "updatedAt", "tmdbId", "posterPath", "voteAverage", "originalLanguage", "imageUrl", "trailerUrl")
+SELECT "createdAt", "duration", COALESCE("genres", ''), "id", "rating", "releaseDate", "synopsis", "title", "updatedAt", "tmdbId", "posterPath", "voteAverage", NULL, "imageUrl", "trailerUrl" FROM "Movie";
 DROP TABLE "Movie";
 ALTER TABLE "new_Movie" RENAME TO "Movie";
 CREATE UNIQUE INDEX "Movie_tmdbId_key" ON "Movie"("tmdbId");
@@ -138,7 +140,7 @@ CREATE TABLE "new_Seat" (
     "isLeft" BOOLEAN,
     "isRight" BOOLEAN,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Seat_hallId_fkey" FOREIGN KEY ("hallId") REFERENCES "Hall" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 INSERT INTO "new_Seat" ("hallId", "id", "number", "row", "position") SELECT "hallId", "id", "number", "row", '{}' as "position" FROM "Seat";
@@ -182,9 +184,10 @@ CREATE TABLE "new_User" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-INSERT INTO "new_User" ("createdAt", "email", "id", "password") SELECT "createdAt", "email", "id", "password" FROM "User";
+INSERT INTO "new_User" ("createdAt", "email", "id", "password", "updatedAt") SELECT "createdAt", "email", "id", "password", CURRENT_TIMESTAMP FROM "User";
 DROP TABLE "User";
 ALTER TABLE "new_User" RENAME TO "User";
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");

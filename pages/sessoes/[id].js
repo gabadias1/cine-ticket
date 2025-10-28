@@ -150,48 +150,80 @@ export default function SelecaoSessoes() {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
-      <header className="bg-blue-900 text-white py-4 px-6 shadow-lg">
+      <header className="bg-white border-b border-gray-200 py-4 px-6 shadow-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-8">
-            <h1 
-              className="text-3xl font-bold cursor-pointer" 
-              onClick={() => router.push("/")}
-            >
-              CineTicket
-            </h1>
-            <nav className="hidden md:flex space-x-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M18 4l2 4h-7l-2-4h7zM4 4l2 4H2l2-4zm2 16l-2-4h7l2 4H6zm14-4l2-4h-7l-2 4h7z"/>
+                </svg>
+              </div>
+              <h1
+                className="text-2xl font-bold text-gray-900 cursor-pointer"
+                onClick={() => router.push("/")}
+              >
+                CineTicket
+              </h1>
+            </div>
+            
+            <div className="flex items-center space-x-2 bg-blue-50 px-4 py-2 rounded-full">
+              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              <span className="text-blue-600 font-medium text-sm">São Paulo</span>
+              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </div>
+            
+            <nav className="hidden lg:flex space-x-8">
               <button
                 onClick={() => router.push("/filmes")}
-                className="text-white hover:text-blue-200 transition-colors"
+                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
               >
                 Filmes
               </button>
               <button
-                onClick={() => router.push('/eventos')}
-                className="text-white hover:text-blue-200 transition-colors"
+                onClick={() => router.push("/eventos")}
+                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
               >
                 Eventos
               </button>
             </nav>
           </div>
-          {user ? (
-            <div className="flex items-center space-x-4">
-              <span className="text-white">Olá, {user.name}</span>
+          
+          <div className="flex items-center space-x-4">
+            <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </button>
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <span className="text-gray-700">Olá, {user.name}</span>
+                <button
+                  onClick={() => router.push("/login")}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full transition-colors"
+                >
+                  Sair
+                </button>
+              </div>
+            ) : (
               <button
                 onClick={() => router.push("/login")}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full transition-colors"
+                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors font-medium"
               >
-                Sair
+                Entrar
               </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => router.push("/login")}
-              className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-full transition-colors"
-            >
-              Entrar
+            )}
+            <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
             </button>
-          )}
+          </div>
         </div>
       </header>
 

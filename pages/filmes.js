@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
@@ -14,6 +14,14 @@ export default function Filmes() {
   const [selectedGenre, setSelectedGenre] = useState('');
   const [showTMDBResults, setShowTMDBResults] = useState(false);
   const [tmdbResults, setTmdbResults] = useState([]);
+  const searchInputRef = useRef(null);
+
+  const focusSearchInput = useCallback(() => {
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+      searchInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -88,6 +96,15 @@ export default function Filmes() {
     }
   }, [searchQuery]);
 
+  useEffect(() => {
+    if (router.query?.focusSearch) {
+      focusSearchInput();
+
+      const { focusSearch, ...rest } = router.query;
+      router.replace({ pathname: router.pathname, query: rest }, undefined, { shallow: true }).catch(() => {});
+    }
+  }, [router, router.query?.focusSearch, focusSearchInput]);
+
 
   return (
     <div className="min-h-screen bg-white">
@@ -133,7 +150,11 @@ export default function Filmes() {
           </div>
           
           <div className="flex items-center space-x-4">
-            <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors">
+            <button
+              className="p-2 text-gray-600 hover:text-blue-600 transition-colors"
+              onClick={focusSearchInput}
+              type="button"
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
               </svg>
@@ -180,6 +201,7 @@ export default function Filmes() {
                 placeholder="Buscar filmes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                ref={searchInputRef}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
