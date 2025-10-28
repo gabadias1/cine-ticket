@@ -51,13 +51,23 @@ cd cine-ticket
 # Execute com Docker
 docker compose -f docker-compose.dev.yml up --build
 
+# Use o seed para pegar os filmes do TMDB
+cd backend
+npm run seed && npm run sync:tmdb:max
+
 # Acesse a aplicação
 # Frontend: http://localhost:3000
 # Backend:  http://localhost:3001
 ```
+### Limpar Container e BD 
+```bash
+docker compose down -v
+docker system prune -f
 
-
-## 🔧 API Endpoints
+cd backend
+npx prisma migrate reset --force
+```
+## API Endpoints
 
 ### Autenticação
 - `POST /auth/login` - Login de usuário
