@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useRef } from 'react';
+import LocationSelector from "../components/LocationSelector";
 import { useRouter } from 'next/router';
 
 export default function Eventos() {
@@ -353,6 +354,8 @@ export default function Eventos() {
   const [filterCity, setFilterCity] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterDate, setFilterDate] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef(null);
   const [modalEvent, setModalEvent] = useState(null);
   const [selectedSector, setSelectedSector] = useState(null);
   const [ticketCount, setTicketCount] = useState(1);
@@ -367,41 +370,24 @@ export default function Eventos() {
       const cityMatch = !filterCity || e.city === filterCity;
       const catMatch = !filterCategory || e.category === filterCategory;
       const dateMatch = !filterDate || e.date === filterDate;
-      return cityMatch && catMatch && dateMatch;
+      const text = `${e.name} ${e.description}`.toLowerCase();
+      const searchMatch = !searchQuery || text.includes(searchQuery.toLowerCase());
+      return cityMatch && catMatch && dateMatch && searchMatch;
     });
-  }, [events, filterCity, filterCategory, filterDate]);
+  }, [events, filterCity, filterCategory, filterDate, searchQuery]);
 
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 py-4 px-6 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 py-4 px-6 shadow-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-8">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M18 4l2 4h-7l-2-4h7zM4 4l2 4H2l2-4zm2 16l-2-4h7l2 4H6zm14-4l2-4h-7l-2 4h7z"/>
-                </svg>
-              </div>
-              <h1
-                className="text-2xl font-bold text-gray-900 cursor-pointer"
-                onClick={() => router.push("/")}
-              >
-                CineTicket
-              </h1>
-            </div>
+            <button onClick={() => router.push("/")} className="flex items-center space-x-3 h-10">
+              <img src="/images/logo.png" alt="CineTicket" className="h-full w-auto object-contain" />
+            </button>
             
             {/* Location Selector */}
-            <div className="flex items-center space-x-2 bg-blue-50 px-4 py-2 rounded-full">
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-              </svg>
-              <span className="text-blue-600 font-medium text-sm">São Paulo</span>
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
-              </svg>
-            </div>
+            <LocationSelector />
             
             <nav className="hidden lg:flex space-x-8">
               <button
@@ -420,7 +406,17 @@ export default function Eventos() {
           </div>
           
           <div className="flex items-center space-x-4">
-            <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors">
+            <button
+              className="p-2 text-gray-600 hover:text-blue-600 transition-colors"
+              onClick={() => {
+                if (searchInputRef.current) {
+                  searchInputRef.current.focus();
+                  searchInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }}
+              type="button"
+              aria-label="Buscar eventos"
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
               </svg>
@@ -431,62 +427,66 @@ export default function Eventos() {
             >
               Entrar
             </button>
-            <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-            </button>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Eventos</h2>
+    <main className="max-w-7xl mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-3xl font-bold text-gray-800">Todos os Eventos</h2>
+        </div>
 
-        {/* Filtros */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Cidade</label>
+        {/* Busca e Filtros - padrão Filmes */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="flex-1">
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar eventos..."
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
             <select
               value={filterCity}
               onChange={(e) => setFilterCity(e.target.value)}
-              className="w-full border rounded-md p-2"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Todas</option>
+              <option value="">Todas as cidades</option>
               {cities.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Categoria</label>
+
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="w-full border rounded-md p-2"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Todas</option>
+              <option value="">Todas as categorias</option>
               {categories.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Data</label>
+
             <input
               type="date"
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
-              className="w-full border rounded-md p-2"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
-          </div>
-          <div className="flex items-end">
+
             <button
-              onClick={() => { setFilterCity(''); setFilterCategory(''); setFilterDate(''); }}
-              className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md py-2"
+              onClick={() => { setSearchQuery(''); setFilterCity(''); setFilterCategory(''); setFilterDate(''); }}
+              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
             >
-              Limpar filtros
+              Limpar Filtros
             </button>
           </div>
         </div>
