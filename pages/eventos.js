@@ -121,7 +121,7 @@ export default function Eventos() {
       id: 4, 
       name: 'BGS 2025', 
       description: 'BRASIL GAME SHOWWWW - O maior evento de games da América Latina.', 
-      image: 'images/events/BGS-LOGO.jpg', 
+      image: 'images/events/bgs-logo.jpg', 
       city: 'São Paulo', 
       category: 'Evento', 
       location: 'Distrito Anhembi, São Paulo - SP', 
@@ -151,12 +151,213 @@ export default function Eventos() {
         }
       ]
     }
+    ,
+    {
+      id: 5,
+      name: 'Concerto Sinfônico - Orquestra Municipal',
+      description: 'Concerto com clássicos e composições contemporâneas.',
+      image: 'images/events/Concerto.jpg',
+      city: 'Porto Alegre',
+      category: 'Concerto',
+      location: 'Teatro São Pedro, Porto Alegre - RS',
+      date: '2025-11-10',
+      time: '20:00',
+      sectors: [
+        { name: 'Camarote', price: 230.0, description: 'Camarote com visão lateral', capacity: 40, benefits: ['Programa impresso', 'Bebida'] },
+        { name: 'Plateia Premium', price: 150.0, description: 'Fileiras centrais', capacity: 120, benefits: ['Assentos numerados'] },
+        { name: 'Plateia', price: 80.0, description: 'Assentos gerais', capacity: 300, benefits: ['Assentos'] }
+      ]
+    },
+    {
+      id: 6,
+      name: 'Musical: Cats - Edição Nacional',
+      description: 'Espetáculo musical inspirado no clássico de Webber.',
+      image: 'images/events/cats.jpg',
+      city: 'São Paulo',
+      category: 'Musical',
+      location: 'Teatro Renault, São Paulo - SP',
+      date: '2025-12-05',
+      time: '21:00',
+      sectors: [
+        { name: 'VIP', price: 320.0, description: 'Assentos VIP com kit', capacity: 50, benefits: ['Kit do espetáculo', 'Welcome drink'] },
+        { name: 'Plateia', price: 160.0, description: 'Assentos numerados', capacity: 200, benefits: ['Assentos numerados'] },
+        { name: 'Balcão', price: 90.0, description: 'Balcão superior', capacity: 150, benefits: ['Vista panorâmica'] }
+      ]
+    },
+    {
+      id: 7,
+      name: 'Circo Mundo Magico',
+      description: 'Apresentações familiares com acrobacias e mágicas.',
+      image: 'images/events/circo.jpeg',
+      city: 'Belo Horizonte',
+      category: 'Circo',
+      location: 'Parque de Exposições, Belo Horizonte - MG',
+      date: '2025-11-22',
+      time: '16:00',
+      sectors: [
+        { name: 'Camarote Família', price: 120.0, description: 'Camarote com espaço para família', capacity: 40, benefits: ['Acesso rápido', 'Área reservada'] },
+        { name: 'Arena', price: 60.0, description: 'Assentos próximos ao picadeiro', capacity: 400, benefits: ['Visão próxima'] },
+        { name: 'Arquibancada', price: 30.0, description: 'Arquibancada econômica', capacity: 800, benefits: [] }
+      ]
+    },
+    {
+      id: 8,
+      name: 'Show Sertanejo - Zezé di Camargo e Luciano',
+      description: 'Turnê nacional do duo sertanejo.',
+      image: 'images/events/zeze.jpg',
+      city: 'Fortaleza',
+      category: 'Show',
+      location: 'Arena Castelão, Fortaleza - CE',
+      date: '2025-12-18',
+      time: '22:00',
+      sectors: [
+        { name: 'Camarote', price: 450.0, description: 'Camarote exclusivo com serviço', capacity: 150, benefits: ['Open bar', 'Área VIP'] },
+        { name: 'Pista', price: 220.0, description: 'Pista geral', capacity: 3000, benefits: ['Entrada geral'] },
+        { name: 'Pista Premium', price: 350.0, description: 'Pista próximo ao palco', capacity: 800, benefits: ['Área próxima ao palco'] }
+      ]
+    },
+
+    {
+      id: 9,
+      name: 'Rock in CM 2025',
+      description: 'O maior festival de rock do interior do Paraná.',
+      image: 'images/events/rockcm.jpg',
+      city: 'Campo Mourão',
+      category: 'Festival',
+      location: 'Parque do Lago, Campo Mourão - PR',
+      date: '2025-12-20',
+      time: '16:00',
+      sectors: [
+        { name: 'Área VIP', price: 450.0, description: 'Área exclusiva com open bar', capacity: 300, benefits: ['Open bar premium', 'Área exclusiva', 'Meet & Greet'] },
+        { name: 'Pista Premium', price: 250.0, description: 'Pista frontal ao palco', capacity: 1000, benefits: ['Área próxima ao palco', 'Entrada antecipada'] },
+        { name: 'Pista', price: 120.0, description: 'Pista comum', capacity: 3000, benefits: ['Acesso à pista'] }
+      ]
+    },
+    {
+      id: 10,
+      name: 'Festival de Verão 2025',
+      description: 'Festival de música eletrônica com DJs internacionais.',
+      image: 'images/events/fest.jpeg',
+      city: 'Salvador',
+      category: 'Festival',
+      location: 'Praia do Forte, Salvador - BA',
+      date: '2025-12-28',
+      time: '22:00',
+      sectors: [
+        { name: 'Lounge VIP', price: 890.0, description: 'Área VIP com vista para o mar', capacity: 200, benefits: ['Open bar premium', 'Buffet', 'Área exclusiva'] },
+        { name: 'Pista Premium', price: 490.0, description: 'Pista com acesso ao front stage', capacity: 1500, benefits: ['Acesso front stage', 'Welcome drink'] },
+        { name: 'Pista', price: 290.0, description: 'Pista comum', capacity: 5000, benefits: ['Acesso à pista'] }
+      ]
+    },
+
+    {
+      id: 11,
+      name: 'Noite do Riso - Fábio Porchat',
+      description: 'Show de stand up com Fábio Porchat e convidados.',
+      image: 'images/events/porchat.jpeg',
+      city: 'Brasília',
+      category: 'Stand-up',
+      location: 'Teatro Nacional, Brasília - DF',
+      date: '2025-11-25',
+      time: '21:00',
+      sectors: [
+        { name: 'VIP Meet & Greet', price: 250.0, description: 'Inclui encontro com artista', capacity: 50, benefits: ['Meet & Greet', 'Foto com artista', 'Assentos premium'] },
+        { name: 'Plateia Gold', price: 180.0, description: 'Primeiras fileiras', capacity: 200, benefits: ['Assentos preferenciais'] },
+        { name: 'Plateia', price: 120.0, description: 'Plateia comum', capacity: 300, benefits: ['Assentos numerados'] }
+      ]
+    },
+    {
+      id: 12,
+      name: 'Comedy Night - Thiago Ventura',
+      description: 'Show de comédia com Thiago Ventura.',
+      image: 'images/events/ventura.jpg',
+      city: 'Recife',
+      category: 'Stand-up',
+      location: 'Teatro Guararapes, Recife - PE',
+      date: '2025-11-30',
+      time: '20:00',
+      sectors: [
+        { name: 'Premium', price: 150.0, description: 'Melhor visão do palco', capacity: 100, benefits: ['Drink incluso', 'Assentos premium'] },
+        { name: 'Plateia Central', price: 120.0, description: 'Visão central do palco', capacity: 300, benefits: ['Assentos numerados'] },
+        { name: 'Plateia Lateral', price: 90.0, description: 'Visão lateral', capacity: 200, benefits: ['Assentos numerados'] }
+      ]
+    },
+
+    {
+      id: 13,
+      name: 'O Fantasma da Ópera',
+      description: 'Clássico musical da Broadway em versão nacional.',
+      image: 'images/events/fantasma.jpg',
+      city: 'São Paulo',
+      category: 'Teatro',
+      location: 'Teatro Municipal, São Paulo - SP',
+      date: '2025-12-10',
+      time: '20:00',
+      sectors: [
+        { name: 'Camarote Especial', price: 400.0, description: 'Camarote com serviço', capacity: 40, benefits: ['Serviço de buffet', 'Champagne', 'Vista premium'] },
+        { name: 'Plateia Nobre', price: 280.0, description: 'Melhores assentos', capacity: 200, benefits: ['Programa autografado', 'Welcome drink'] },
+        { name: 'Plateia', price: 180.0, description: 'Plateia comum', capacity: 500, benefits: ['Assentos numerados'] }
+      ]
+    },
+    {
+      id: 14,
+      name: 'Romeu e Julieta - Ballet',
+      description: 'Ballet clássico com orquestra ao vivo.',
+      image: 'images/events/ree.jpg',
+      city: 'Rio de Janeiro',
+      category: 'Teatro',
+      location: 'Theatro Municipal, Rio de Janeiro - RJ',
+      date: '2025-12-15',
+      time: '19:00',
+      sectors: [
+        { name: 'Camarote', price: 350.0, description: 'Camarote com serviço', capacity: 48, benefits: ['Serviço exclusivo', 'Welcome drink'] },
+        { name: 'Plateia Premium', price: 250.0, description: 'Melhores assentos', capacity: 150, benefits: ['Programa especial', 'Visão privilegiada'] },
+        { name: 'Plateia', price: 150.0, description: 'Plateia comum', capacity: 400, benefits: ['Assentos numerados'] }
+      ]
+    },
+
+    {
+      id: 15,
+      name: 'Comic Con Brasil 2025',
+      description: 'O maior evento geek do Brasil.',
+      image: 'images/events/comic.jpg',
+      city: 'São Paulo',
+      category: 'Evento',
+      location: 'Expo Center Norte, São Paulo - SP',
+      date: '2025-12-05',
+      time: '10:00',
+      sectors: [
+        { name: 'Epic Pass', price: 799.0, description: 'Acesso total com extras', capacity: 500, benefits: ['Meet & Greet', 'Kit exclusivo', 'Fast pass', 'Lounge VIP'] },
+        { name: 'Full Pass', price: 499.0, description: 'Acesso a todos os dias', capacity: 2000, benefits: ['Acesso todos os dias', 'Camiseta evento'] },
+        { name: 'Day Pass', price: 199.0, description: 'Acesso de um dia', capacity: 5000, benefits: ['Acesso de um dia'] }
+      ]
+    },
+    {
+      id: 16,
+      name: 'Expo Tattoo 2025',
+      description: 'Festival internacional de tatuagem.',
+      image: 'images/events/expo.jpg',
+      city: 'Curitiba',
+      category: 'Evento',
+      location: 'Expo Barigui, Curitiba - PR',
+      date: '2025-11-28',
+      time: '12:00',
+      sectors: [
+        { name: 'VIP Pass', price: 299.0, description: 'Acesso VIP com benefícios', capacity: 300, benefits: ['Área VIP', 'Kit exclusivo', 'Voucher desconto'] },
+        { name: 'Full Pass', price: 199.0, description: 'Acesso todos os dias', capacity: 1000, benefits: ['Acesso completo', 'Camiseta oficial'] },
+        { name: 'Day Pass', price: 89.0, description: 'Acesso de um dia', capacity: 2000, benefits: ['Acesso de um dia'] }
+      ]
+    }
   ]);
 
   const [filterCity, setFilterCity] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [modalEvent, setModalEvent] = useState(null);
+  const [selectedSector, setSelectedSector] = useState(null);
+  const [ticketCount, setTicketCount] = useState(1);
+  const [selectedSeats, setSelectedSeats] = useState([]);
+  const [extras, setExtras] = useState({ estacionamento: false, camarotePrivado: false, estacionamentoVIP: false });
 
   const cities = useMemo(() => Array.from(new Set(events.map((e) => e.city))).sort(), [events]);
   const categories = useMemo(() => Array.from(new Set(events.map((e) => e.category))).sort(), [events]);
