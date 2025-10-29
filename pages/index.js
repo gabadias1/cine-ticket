@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import LocationSelector from "../components/LocationSelector";
 import { useRouter } from "next/router";
 import { useAuth } from "../contexts/AuthContext";
 import api from "../utils/api";
@@ -131,29 +132,15 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 py-4 px-6 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 py-4 px-6 shadow-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-8">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M18 4l2 4h-7l-2-4h7zM4 4l2 4H2l2-4zm2 16l-2-4h7l2 4H6zm14-4l2-4h-7l-2 4h7z"/>
-                </svg>
-              </div>
-              <h1 className="text-2xl font-bold text-gray-900">CineTicket</h1>
-            </div>
+            <button onClick={() => router.push("/")} className="flex items-center space-x-3 h-10">
+              <img src="/images/logo.png" alt="CineTicket" className="h-full w-auto object-contain" />
+            </button>
             
             {/* Location Selector */}
-            <div className="flex items-center space-x-2 bg-blue-50 px-4 py-2 rounded-full">
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-              </svg>
-              <span className="text-blue-600 font-medium text-sm">São Paulo</span>
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
-              </svg>
-            </div>
+            <LocationSelector />
             
             <nav className="hidden lg:flex space-x-8">
               <button
@@ -199,11 +186,6 @@ export default function Home() {
                 Entrar
               </button>
             )}
-            <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-            </button>
           </div>
         </div>
       </header>
@@ -235,12 +217,6 @@ export default function Home() {
                   <div className="absolute inset-0 flex items-center">
                     <div className="max-w-7xl mx-auto px-8 w-full">
                       <div className="max-w-2xl">
-                        {/* Pre-sale tag */}
-                        <div className="mb-4">
-                          <span className="bg-gradient-to-r from-purple-500 to-orange-500 text-white px-4 py-2 rounded-full text-sm font-bold">
-                            PRÉ VENDA | ESTREIA {movie.release_date ? new Date(movie.release_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : 'EM BREVE'}
-                          </span>
-                        </div>
                         
                         <h2 className="text-5xl font-bold text-white mb-4 leading-tight">
                           {movie.title}

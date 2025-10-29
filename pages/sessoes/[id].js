@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import LocationSelector from "../../components/LocationSelector";
 import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../utils/api';
@@ -12,12 +13,9 @@ export default function SelecaoSessoes() {
   const [cinemas, setCinemas] = useState([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedCinema, setSelectedCinema] = useState('');
-  const [selectedFilters, setSelectedFilters] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  
 
-  const availableFilters = useMemo(() => [
-    'Laser', 'Dublado', 'Vip', 'Dolby Atmos', 'Normal', 'XD', 'Legendado', 'Macro XE'
-  ], []);
 
   const dates = useMemo(() => {
     const dates = [];
@@ -103,14 +101,6 @@ export default function SelecaoSessoes() {
     return acc;
   }, {});
 
-  const toggleFilter = useCallback((filter) => {
-    setSelectedFilters(prev => 
-      prev.includes(filter) 
-        ? prev.filter(f => f !== filter)
-        : [...prev, filter]
-    );
-  }, []);
-
   const formatTime = useCallback((dateString) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString('pt-BR', { 
@@ -150,33 +140,14 @@ export default function SelecaoSessoes() {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 py-4 px-6 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 py-4 px-6 shadow-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-8">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M18 4l2 4h-7l-2-4h7zM4 4l2 4H2l2-4zm2 16l-2-4h7l2 4H6zm14-4l2-4h-7l-2 4h7z"/>
-                </svg>
-              </div>
-              <h1
-                className="text-2xl font-bold text-gray-900 cursor-pointer"
-                onClick={() => router.push("/")}
-              >
-                CineTicket
-              </h1>
-            </div>
+            <button onClick={() => router.push("/")} className="flex items-center space-x-3 h-10">
+              <img src="/images/logo.png" alt="CineTicket" className="h-full w-auto object-contain" />
+            </button>
             
-            <div className="flex items-center space-x-2 bg-blue-50 px-4 py-2 rounded-full">
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-              </svg>
-              <span className="text-blue-600 font-medium text-sm">São Paulo</span>
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/>
-              </svg>
-            </div>
+            <LocationSelector />
             
             <nav className="hidden lg:flex space-x-8">
               <button
@@ -218,11 +189,6 @@ export default function SelecaoSessoes() {
                 Entrar
               </button>
             )}
-            <button className="p-2 text-gray-600 hover:text-blue-600 transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-            </button>
           </div>
         </div>
       </header>
@@ -259,9 +225,6 @@ export default function SelecaoSessoes() {
             <button className="py-4 px-3 text-sm font-medium border-b-2 border-blue-500 text-blue-600">
               Sessões
             </button>
-            <button className="py-4 px-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
-              Sobre o filme
-            </button>
           </div>
         </div>
       </div>
@@ -287,31 +250,7 @@ export default function SelecaoSessoes() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white shadow-md py-4">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center space-x-4">
-            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <div className="flex space-x-2 overflow-x-auto">
-              {availableFilters.map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => toggleFilter(filter)}
-                  className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                    selectedFilters.includes(filter)
-                      ? 'bg-blue-600 text-white border-2 border-blue-600'
-                      : 'bg-gray-200 text-gray-700 border-2 border-gray-300 hover:bg-gray-300'
-                  }`}
-                >
-                  {filter}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      
 
       {/* Sessions List */}
       <div className="max-w-7xl mx-auto px-4 py-6">
@@ -336,7 +275,7 @@ export default function SelecaoSessoes() {
             {Object.entries(sessionsByCinema).map(([cinemaId, cinemaData]) => (
               <div key={cinemaId} className="bg-white rounded-lg shadow-lg overflow-hidden">
                 <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center mb-4">
                     <div className="flex items-center space-x-3">
                       <button className="text-gray-400 hover:text-red-500 transition-colors">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -348,43 +287,21 @@ export default function SelecaoSessoes() {
                         <p className="text-gray-600">{cinemaData.cinema.address}</p>
                       </div>
                     </div>
-                    <div className="flex space-x-4">
-                      <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                        </svg>
-                        <span className="text-sm">Assentos</span>
-                      </button>
-                      <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                        </svg>
-                        <span className="text-sm">Preços</span>
-                      </button>
-                      <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
-                        <span className="text-sm">Detalhes</span>
-                      </button>
-                    </div>
                   </div>
                   
                   <div className="space-y-3">
                     {cinemaData.sessions.map((session) => (
                       <div key={session.id} className="border border-gray-200 rounded-lg p-4">
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            <div className="flex space-x-1">
-                              {['LASER', 'DUBLADO', 'VIP', 'DOLBY ATMOS'].map((feature) => (
-                                <span
-                                  key={feature}
-                                  className="bg-blue-600 text-white text-xs px-2 py-1 rounded"
-                                >
-                                  {feature}
-                                </span>
-                              ))}
-                            </div>
+                          <div className="flex space-x-1">
+                            {['LASER', 'DUBLADO', 'VIP', 'DOLBY ATMOS'].map((feature) => (
+                              <span
+                                key={feature}
+                                className="bg-blue-600 text-white text-xs px-2 py-1 rounded"
+                              >
+                                {feature}
+                              </span>
+                            ))}
                           </div>
                           <button
                             onClick={() => router.push(`/assentos/${session.id}`)}
