@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import api from '../../utils/api';
 
 export default function TeatroPage() {
   const router = useRouter();
@@ -24,6 +25,43 @@ export default function TeatroPage() {
   };
 
   const [selecionados, setSelecionados] = useState(new Map());
+  const [movieTitle, setMovieTitle] = useState('');
+  const [sessionTime, setSessionTime] = useState('');
+
+  useEffect(() => {
+    const { movieId } = router.query;
+    if (!movieId) return;
+    (async () => {
+      try {
+        const movies = await api.getMovies();
+        const mv = movies.find(m => m.id === parseInt(movieId));
+        if (mv) setMovieTitle(mv.title);
+      } catch (e) {
+        console.error('Erro ao buscar filme em assentos 4:', e);
+      }
+    })();
+  }, [router.query]);
+
+  useEffect(() => {
+    const { sessionId } = router.query;
+    if (!sessionId) return;
+    (async () => {
+      try {
+        const sessions = await api.getSessions();
+        const s = sessions.find(x => x.id === parseInt(sessionId));
+        let startsAt = null;
+        if (s && s.startsAt) startsAt = s.startsAt;
+        if (!startsAt && router.query.sessionStartsAt) startsAt = router.query.sessionStartsAt;
+        if (startsAt) {
+          const date = new Date(startsAt);
+          const time = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
+          setSessionTime(time);
+        }
+      } catch (e) {
+        console.error('Erro ao buscar sessão em assentos 4:', e);
+      }
+    })();
+  }, [router.query]);
 
   function toggleArea(area) {
     setSelecionados(prev => {
@@ -76,7 +114,8 @@ export default function TeatroPage() {
     <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 text-gray-900 p-6 flex gap-6">
       {/* Mapa Visual do Teatro */}
       <div className="flex-1 bg-white rounded-2xl p-6 flex flex-col items-center shadow-xl">
-        <h2 className="text-xl font-bold mb-6 text-center">Visual do Teatro</h2>
+  <h2 className="text-xl font-bold mb-2 text-center">{movieTitle || 'Selecionando Filme'}{sessionTime ? ` — ${sessionTime}` : ''}</h2>
+  <h3 className="text-sm text-gray-600 mb-4">Visual do Teatro</h3>
 
         <div className="w-full max-w-2xl space-y-4">
           {/* Palco */}
