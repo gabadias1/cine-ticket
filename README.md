@@ -51,9 +51,9 @@ cd cine-ticket
 # Execute com Docker
 docker compose -f docker-compose.dev.yml up --build
 
-# Use o seed para pegar os filmes do TMDB
-cd backend
-npm run seed && npm run sync:tmdb:max
+# Em outro terminal, popular o banco (seed) e sincronizar catálogo TMDB
+docker compose exec backend npm run seed
+docker compose exec backend npm run sync:tmdb:max
 
 # Acesse a aplicação
 # Frontend: http://localhost:3000
@@ -64,8 +64,8 @@ npm run seed && npm run sync:tmdb:max
 docker compose down -v
 docker system prune -f
 
-cd backend
-npx prisma migrate reset --force
+# Resetar banco dentro do container backend
+docker compose exec backend npx prisma migrate reset --force
 ```
 ## API Endpoints
 

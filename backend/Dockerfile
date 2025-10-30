@@ -18,13 +18,14 @@ COPY . .
 ENV DATABASE_URL="file:./dev.db"
 ENV PORT=3001
 
-RUN npx prisma generate
-RUN rm -f prisma/dev.db || true
-RUN npx prisma migrate dev --name init
-RUN npm run seed
-
 # Mudar para usuário não-root
 USER nextjs
 
 EXPOSE 3001
+
+# Executar inicialização do banco no entrypoint e depois iniciar o servidor
+USER root
+RUN chmod +x /app/docker-entrypoint.sh
+USER nextjs
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["npm", "run", "dev"]
