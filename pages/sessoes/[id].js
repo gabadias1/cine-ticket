@@ -58,8 +58,89 @@ export default function SelecaoSessoes() {
         }
 
         setMovie(movieData);
-        setSessions(sessionsData);
-        setCinemas(cinemasData);
+        const extraCinemaBaseId = 9000000;
+        const extraCinemas = [
+          { id: extraCinemaBaseId + 1, name: 'Cine Avenida' },
+          { id: extraCinemaBaseId + 2, name: 'Cine Extra' }
+        ];
+
+        // Gerar sessões sintéticas: 3 horários por cinema, para os próximos dias já calculados em `dates`
+        // Cada cinema terá horários diferentes (não idênticos entre si). Não são aleatórios — são definidos
+        const generatedSessions = [];
+        let syntheticSessionId = -1000;
+        dates.forEach((dateObj) => {
+          const dateStr = dateObj.date; // formato YYYY-MM-DD
+
+          // Horários distintos por cinema extra (diferença de 30min ou 1h entre eles)
+          const timesByCinema = {
+            [extraCinemaBaseId + 1]: ['12:30:00', '15:00:00', '18:00:00'], // Cine Avenida
+            [extraCinemaBaseId + 2]: ['13:00:00', '16:30:00', '20:00:00']  // Cine Extra
+          };
+
+          extraCinemas.forEach((cinema) => {
+            const times = timesByCinema[cinema.id] || ['13:00:00', '16:00:00', '19:00:00'];
+            times.forEach((time) => {
+              generatedSessions.push({
+                id: syntheticSessionId--,
+                movieId: movieData.id,
+                hallId: cinema.id,
+                startsAt: `${dateStr}T${time}`
+              });
+            });
+          });
+        });
+
+        // Atualizar estados mesclando dados reais com os sintéticos
+        // Se existir um cinema real (o primeiro), garantir que ele também tenha 3 horários por dia
+        const primaryExtraSessions = [];
+        if (cinemasData && cinemasData.length > 0) {
+          // Tentar identificar explicitamente pelo nome (Cine Center ou Cinemark)
+          const primaryNameMatch = cinemasData.find(c => /cine center|cinemark/i.test(c.name));
+          const primaryCinema = primaryNameMatch || cinemasData[0];
+          // Horários de referência para o cinema principal (diferentes dos extras)
+          const primaryTimes = ['13:30:00', '15:30:00', '18:30:00'];
+
+          // Para cada data, verificar sessões já existentes para esse cinema e adicionar as que faltam
+          dates.forEach((dateObj) => {
+            const dateStr = dateObj.date;
+
+            // Encontrar horários já presentes para esse cinema naquela data
+            const existingTimes = (sessionsData || [])
+              .filter(s => s.hallId?.toString() === primaryCinema.id?.toString())
+              .map(s => {
+                // Extrair data e hora de startsAt de maneira robusta (aceita strings com ou sem 'T')
+                if (typeof s.startsAt === 'string' && s.startsAt.includes('T')) {
+                  const [d, t] = s.startsAt.split('T');
+                  return { date: d, time: t.split('Z')[0].split('.')[0] };
+                }
+                const iso = new Date(s.startsAt).toISOString();
+                const [d, t] = iso.split('T');
+                return { date: d, time: t.split('Z')[0].split('.')[0] };
+              })
+              .filter(x => x.date === dateStr)
+              .map(x => x.time);
+
+            // Quantos já existem para a data (serão contados com os futuros adicionados)
+            let totalForDate = existingTimes.length;
+
+            for (const time of primaryTimes) {
+              if (totalForDate >= 3) break;
+              // pular se já existe
+              if (existingTimes.includes(time)) continue;
+
+              primaryExtraSessions.push({
+                id: syntheticSessionId--,
+                movieId: movieData.id,
+                hallId: primaryCinema.id,
+                startsAt: `${dateStr}T${time}`
+              });
+              totalForDate++;
+            }
+          });
+        }
+
+        setSessions([...(sessionsData || []), ...generatedSessions, ...primaryExtraSessions]);
+        setCinemas([...(cinemasData || []), ...extraCinemas]);
         
         // Definir data padrão como hoje
         setSelectedDate(dates[0].date);
@@ -284,7 +365,6 @@ export default function SelecaoSessoes() {
                       </button>
                       <div>
                         <h3 className="text-xl font-bold text-gray-800">{cinemaData.cinema.name}</h3>
-                        <p className="text-gray-600">{cinemaData.cinema.address}</p>
                       </div>
                     </div>
                   </div>
@@ -304,7 +384,36 @@ export default function SelecaoSessoes() {
                             ))}
                           </div>
                           <button
-                            onClick={() => router.push(`/assentos/${session.id}`)}
+                            onClick={() => {
+                              // Usar o nome do cinema do próprio bloco (cinemaData) — mais confiável
+                              const name = (cinemaData && cinemaData.cinema && cinemaData.cinema.name) ? cinemaData.cinema.name : '';
+                              const extraCinemaBaseId = 9000000;
+                              let sufix = '';
+
+                              // Checar ids sintéticos primeiro (caso hallId venha como número/string)
+                              if (session.hallId === extraCinemaBaseId + 1 || session.hallId?.toString() === (extraCinemaBaseId + 1).toString()) {
+                                sufix = '2';
+                              } else if (session.hallId === extraCinemaBaseId + 2 || session.hallId?.toString() === (extraCinemaBaseId + 2).toString()) {
+                                sufix = '3';
+                              } else if (/cine avenida/i.test(name)) {
+                                sufix = '2';
+                              } else if (/cine extra/i.test(name)) {
+                                sufix = '3';
+                              } else if (/cine center|cinemark/i.test(name)) {
+                                sufix = '1';
+                              }
+
+                              // Construir pathname dinâmico para o Next resolver corretamente os arquivos
+                              let pathname;
+                              if (sufix === '1') pathname = '/assentos/[id]1';
+                              else if (sufix === '2') pathname = '/assentos/[id]2';
+                              else if (sufix === '3') pathname = '/assentos/[id]3';
+                              else pathname = '/assentos/[id]';
+
+                              const query = { id: session.id, movieId: movie?.id, sessionId: session.id, sessionStartsAt: session.startsAt };
+                              console.debug('Navigating to seats', { sessionId: session.id, hallId: session.hallId, name, sufix, pathname, query });
+                              router.push({ pathname, query });
+                            }}
                             className="bg-gray-800 text-white px-6 py-3 rounded-lg hover:bg-gray-900 transition-colors font-medium"
                           >
                             {formatTime(session.startsAt)}
