@@ -214,6 +214,9 @@ class TMDBService {
 
   convertTMDBMovieToLocal(tmdbMovie) {
     const genres = tmdbMovie.genres?.map((genre) => genre.name).filter(Boolean) || [];
+    const parsedRelease = tmdbMovie.release_date && !isNaN(Date.parse(tmdbMovie.release_date))
+      ? new Date(tmdbMovie.release_date)
+      : new Date('1970-01-01');
 
     return {
       tmdbId: tmdbMovie.id,
@@ -223,7 +226,7 @@ class TMDBService {
       rating: this.convertRating(tmdbMovie.adult),
       posterPath: tmdbMovie.poster_path,
       backdropPath: tmdbMovie.backdrop_path,
-      releaseDate: tmdbMovie.release_date ? new Date(tmdbMovie.release_date) : null,
+      releaseDate: parsedRelease,
       voteAverage: tmdbMovie.vote_average,
       voteCount: tmdbMovie.vote_count,
       originalLanguage: tmdbMovie.original_language,

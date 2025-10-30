@@ -9,6 +9,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
     "seed": "npx prisma migrate reset --force && node scripts/seed.js",
+    "init-db": "prisma generate && prisma migrate deploy",
     "sync:tmdb:max": "node scripts/syncMaximumMovies.js"
   },
   "dependencies": {

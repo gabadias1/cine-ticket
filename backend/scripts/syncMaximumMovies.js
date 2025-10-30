@@ -11,6 +11,7 @@ async function syncMaximumMoviesFromTMDB() {
     let totalSynced = 0;
     let totalSkipped = 0;
     let totalErrors = 0;
+    const processedIds = new Set();
     
     // Função para processar uma lista de filmes
     const processMovies = async (movies, category) => {
@@ -20,6 +21,12 @@ async function syncMaximumMoviesFromTMDB() {
       
       for (const tmdbMovie of movies) {
         try {
+          // Evitar reprocessar o mesmo filme dentro desta execução
+          if (processedIds.has(tmdbMovie.id)) {
+            skipped++;
+            continue;
+          }
+
           // Verificar se já existe
           const existing = await prisma.movie.findUnique({
             where: { tmdbId: tmdbMovie.id }
@@ -27,6 +34,7 @@ async function syncMaximumMoviesFromTMDB() {
           
           if (existing) {
             skipped++;
+            processedIds.add(tmdbMovie.id);
             continue;
           }
           
@@ -34,9 +42,14 @@ async function syncMaximumMoviesFromTMDB() {
           const details = await tmdbService.getMovieDetails(tmdbMovie.id);
           const movieData = tmdbService.convertTMDBMovieToLocal(details);
           
-          // Criar filme no banco
-          await prisma.movie.create({ data: movieData });
+          // Criar filme no banco (ou ignorar se já existir) usando upsert para evitar conflitos de unicidade
+          await prisma.movie.upsert({
+            where: { tmdbId: movieData.tmdbId },
+            update: {},
+            create: movieData
+          });
           synced++;
+          processedIds.add(tmdbMovie.id);
           
           // Pequeno delay para não sobrecarregar a API (rate limit)
           await new Promise(resolve => setTimeout(resolve, 200));
