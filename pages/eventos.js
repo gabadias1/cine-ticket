@@ -1,9 +1,11 @@
 import { useMemo, useState, useRef } from 'react';
 import LocationSelector from "../components/LocationSelector";
 import { useRouter } from 'next/router';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Eventos() {
   const router = useRouter();
+  const { user, logout } = useAuth();
 
   const [events] = useState([
     { 
@@ -421,12 +423,30 @@ export default function Eventos() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
               </svg>
             </button>
-            <button
-              onClick={() => router.push("/login")}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors font-medium"
-            >
-              Entrar
-            </button>
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <span className="text-gray-700">Olá, {user.name}</span>
+                <button
+                  onClick={() => router.push("/perfil")}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition-colors text-sm"
+                >
+                  👤 Perfil
+                </button>
+                <button
+                  onClick={logout}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full transition-colors"
+                >
+                  Sair
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => router.push("/login")}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors font-medium"
+              >
+                Entrar
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -584,18 +604,27 @@ export default function Eventos() {
                       </div>
                       <button
                         onClick={() => { 
-                          setModalEvent(null);
+                          if (!user) {
+                            router.push('/login');
+                            return;
+                          }
+                          // Redirecionar para pagamento com dados do evento
                           router.push({
-                            pathname: '/login',
-                            query: { 
+                            pathname: '/pagamento',
+                            query: {
+                              tipo: 'evento',
                               eventId: modalEvent.id,
-                              sectorName: sector.name
+                              eventName: modalEvent.name,
+                              sector: sector.name,
+                              price: sector.price,
+                              eventDate: modalEvent.date
                             }
                           });
+                          setModalEvent(null);
                         }}
                         className="mt-4 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors"
                       >
-                        Selecionar
+                        Comprar Ingresso
                       </button>
                     </div>
                   ))}

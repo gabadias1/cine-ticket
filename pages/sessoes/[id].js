@@ -45,19 +45,19 @@ export default function SelecaoSessoes() {
       try {
         setIsLoading(true);
         
-        // Carregar dados do filme e sessões
-        const [movieData, sessionsData, cinemasData] = await Promise.all([
-          api.getMovies().then(movies => movies.find(m => m.id === parseInt(id))),
+        // Carregar dados do filme do TMDB e sessões
+        const [tmdbData, sessionsData, cinemasData] = await Promise.all([
+          api.getTMDBPopular().then(data => data.results?.find(m => m.id === parseInt(id))),
           api.getSessions(),
           api.getCinemas()
         ]);
 
-        if (!movieData) {
+        if (!tmdbData) {
           router.push('/filmes');
           return;
         }
 
-        setMovie(movieData);
+        setMovie(tmdbData);
         const extraCinemaBaseId = 9000000;
         const extraCinemas = [
           { id: extraCinemaBaseId + 1, name: 'Cine Avenida' },
@@ -82,7 +82,7 @@ export default function SelecaoSessoes() {
             times.forEach((time) => {
               generatedSessions.push({
                 id: syntheticSessionId--,
-                movieId: movieData.id,
+                movieId: tmdbData.id,
                 hallId: cinema.id,
                 startsAt: `${dateStr}T${time}`
               });
@@ -130,7 +130,7 @@ export default function SelecaoSessoes() {
 
               primaryExtraSessions.push({
                 id: syntheticSessionId--,
-                movieId: movieData.id,
+                movieId: tmdbData.id,
                 hallId: primaryCinema.id,
                 startsAt: `${dateStr}T${time}`
               });
@@ -279,8 +279,8 @@ export default function SelecaoSessoes() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center space-x-6">
             <img
-              src={movie.posterPath 
-                ? `https://image.tmdb.org/t/p/w300${movie.posterPath}`
+              src={movie.poster_path 
+                ? `https://image.tmdb.org/t/p/w300${movie.poster_path}`
                 : 'https://via.placeholder.com/200x300?text=Poster'
               }
               alt={movie.title}
@@ -288,11 +288,11 @@ export default function SelecaoSessoes() {
             />
             <div>
               <h2 className="text-3xl font-bold text-gray-800 mb-2">{movie.title}</h2>
-              <p className="text-gray-600 mb-2">{movie.synopsis}</p>
+              <p className="text-gray-600 mb-2">{movie.overview}</p>
               <div className="flex items-center space-x-4 text-sm text-gray-500">
-                <span>{Math.floor(movie.duration / 60)}h {movie.duration % 60}min</span>
-                <span>{movie.rating}</span>
-                <span>{movie.releaseDate?.split('T')[0] || 'Em breve'}</span>
+                <span>{movie.release_date?.split('-')[0] || 'Em breve'}</span>
+                <span>{movie.adult ? '18+' : 'L'}</span>
+                <span>⭐ {movie.vote_average?.toFixed(1)}</span>
               </div>
             </div>
           </div>
