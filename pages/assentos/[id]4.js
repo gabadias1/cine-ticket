@@ -98,18 +98,35 @@ export default function TeatroPage() {
   function limpar() { setSelecionados(new Map()); }
 
   function pagar() {
-    if (selecionados.size === 0) { alert('Nenhuma área selecionada!'); return; }
-    const pedido = Array.from(selecionados.entries()).map(([nome, info]) => ({
-      area: nome,
-      tipo: tipos[info.tipo].label,
-      quantidade: info.qtd,
-      valorUnitario: `R$ ${(info.area.precoBase * tipos[info.tipo].multiplicador).toFixed(2)}`,
-      total: `R$ ${(info.area.precoBase * tipos[info.tipo].multiplicador * info.qtd).toFixed(2)}`,
-    }));
+    if (selecionados.size === 0) { 
+      alert('Nenhuma área selecionada!'); 
+      return; 
+    }
+    if (!user) {
+      alert('Você precisa estar logado para comprar ingressos!');
+      router.push('/login');
+      return;
+    }
 
-    const linhas = pedido.map(item => `• ${item.area}\n  ${item.tipo} - ${item.quantidade}x (${item.valorUnitario})\n  Total: ${item.total}`);
-    const mensagem = `PEDIDO CONFIRMADO\n\n${linhas.join('\n\n')}\n\nTOTAL GERAL: R$ ${total.toFixed(2)}`;
-    alert(mensagem);
+    // Preparar dados dos ingressos de evento
+    const { eventId } = router.query;
+    const ingressos = Array.from(selecionados.entries()).map(([areaNome, info]) => {
+      const preco = info.area.precoBase * tipos[info.tipo].multiplicador;
+      return {
+        areaNome: areaNome,
+        tipo: tipos[info.tipo].label,
+        eventId: parseInt(eventId),
+        quantidade: info.qtd,
+        precoUnitario: preco,
+        preco: preco * info.qtd
+      };
+    });
+
+    // Salvar dados no sessionStorage
+    sessionStorage.setItem('ingressoData', JSON.stringify(ingressos));
+
+    // Redirecionar para a página de pagamento
+    router.push(`/pagamento?ingressos=${encodeURIComponent(JSON.stringify(ingressos))}`);
   }
 
   const total = Array.from(selecionados.values()).reduce((s, v) => s + v.area.precoBase * tipos[v.tipo].multiplicador * v.qtd, 0);

@@ -29,9 +29,11 @@ export default function Filmes() {
       try {
         console.log('Iniciando carregamento de dados...');
         
-        // Carregar filmes primeiro
-        const moviesData = await api.getMovies();
-        console.log('Filmes carregados:', moviesData);
+        // Carregar filmes populares do TMDB
+        const tmdbData = await api.getTMDBPopular(1);
+        console.log('Filmes TMDB carregados:', tmdbData);
+        
+        const moviesData = tmdbData.results || [];
         setMovies(moviesData);
         setFilteredMovies(moviesData);
         
@@ -63,16 +65,15 @@ export default function Filmes() {
     if (searchQuery) {
       filtered = filtered.filter(movie =>
         movie.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        movie.synopsis?.toLowerCase().includes(searchQuery.toLowerCase())
+        movie.overview?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     if (selectedGenre) {
       filtered = filtered.filter(movie => {
-        if (movie.genres) {
-          // Gêneros estão armazenados como string simples (ex: "Terror, Suspense")
-          const movieGenres = movie.genres.split(', ').map(genre => genre.trim());
-          return movieGenres.some(genre => genre.toLowerCase().includes(selectedGenre.toLowerCase()));
+        if (movie.genre_ids) {
+          // Verificar se o filme tem o gênero selecionado
+          return movie.genre_ids.includes(parseInt(selectedGenre));
         }
         return false;
       });
@@ -149,6 +150,12 @@ export default function Filmes() {
             {user ? (
               <div className="flex items-center space-x-4">
                 <span className="text-gray-700">Olá, {user.name}</span>
+                <button
+                  onClick={() => router.push("/perfil")}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition-colors text-sm"
+                >
+                  👤 Perfil
+                </button>
                 <button
                   onClick={logout}
                   className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full transition-colors"
@@ -286,7 +293,7 @@ export default function Filmes() {
               <div className="col-span-full text-center py-8">
                 <p className="text-gray-600 mb-4">Nenhum filme encontrado.</p>
                 <p className="text-sm text-gray-500">
-                  Use a busca para encontrar filmes no TMDB ou clique em "Sincronizar Filmes Populares" para adicionar filmes ao catálogo.
+                  Tente ajustar seus filtros ou use a busca para encontrar filmes.
                 </p>
               </div>
             ) : (
@@ -298,8 +305,8 @@ export default function Filmes() {
                   <div className="relative">
                     <div className="aspect-w-2 aspect-h-3">
                       <img
-                        src={movie.posterPath 
-                          ? `https://image.tmdb.org/t/p/w500${movie.posterPath}`
+                        src={movie.poster_path 
+                          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
                           : 'https://via.placeholder.com/300x450?text=Poster'
                         }
                         alt={movie.title}
@@ -311,7 +318,7 @@ export default function Filmes() {
                       />
                     </div>
                     <div className="absolute top-2 right-2 bg-yellow-400 text-xs font-bold px-2 py-1 rounded-full">
-                      {movie.voteAverage ? `⭐ ${movie.voteAverage.toFixed(1)}` : movie.rating}
+                      {movie.vote_average ? `⭐ ${movie.vote_average.toFixed(1)}` : '⭐ N/A'}
                     </div>
                   </div>
                   <div className="p-4 flex flex-col flex-grow">
@@ -320,27 +327,14 @@ export default function Filmes() {
                         {movie.title}
                       </h3>
                       <span className="text-sm font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
-                        {movie.rating}
+                        {movie.adult ? '18+' : 'L'}
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 mb-3 line-clamp-3 flex-grow">
-                      {movie.synopsis || movie.overview}
+                      {movie.overview}
                     </p>
-                    {movie.genres && (
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {movie.genres.split(', ').map((genre, index) => (
-                          <span
-                            key={index}
-                            className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full"
-                          >
-                            {genre.trim()}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                     <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                      <span>{Math.floor(movie.duration / 60)}h {movie.duration % 60}min</span>
-                      <span>{movie.releaseDate?.split('T')[0] || movie.releaseDate?.split('-')[0] || 'N/A'}</span>
+                      <span>{movie.release_date?.split('-')[0] || 'N/A'}</span>
                     </div>
                     <div className="space-y-2 mt-auto">
                       <div className="flex items-center text-sm text-gray-500">

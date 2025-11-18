@@ -77,6 +77,22 @@ class ApiService {
     });
   }
 
+  // Events endpoints
+  async getEvents() {
+    return this.request('/events');
+  }
+
+  async getEvent(id) {
+    return this.request(`/events/${id}`);
+  }
+
+  async createEvent(eventData) {
+    return this.request('/events', {
+      method: 'POST',
+      body: JSON.stringify(eventData),
+    });
+  }
+
   // Sessions endpoints
   async getSessions() {
     return this.request('/sessions');
@@ -94,6 +110,41 @@ class ApiService {
     return this.request('/purchase', {
       method: 'POST',
       body: JSON.stringify({ userId, sessionId, seatId }),
+    });
+  }
+
+  // Payment endpoints
+  async processPayment(userId, method, totalAmount, paymentData, ticketDetails) {
+    return this.request('/payment/process', {
+      method: 'POST',
+      body: JSON.stringify({
+        userId,
+        method,
+        totalAmount,
+        paymentData,
+        ticketDetails
+      }),
+    });
+  }
+
+  async getUserTickets(userId) {
+    return this.request(`/user/${userId}/tickets`);
+  }
+
+  async getUserEventTickets(userId) {
+    return this.request(`/user/${userId}/event-tickets`);
+  }
+
+  async purchaseEventTicket(userId, eventId, price, ticketType, seatNumber = null) {
+    return this.request('/purchase-event', {
+      method: 'POST',
+      body: JSON.stringify({
+        userId,
+        eventId,
+        price,
+        ticketType,
+        seatNumber
+      }),
     });
   }
 

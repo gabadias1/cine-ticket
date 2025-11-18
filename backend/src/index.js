@@ -448,6 +448,69 @@ app.post('/cinemas', async (req, res) => {
   }
 });
 
+// Events endpoints
+app.get('/events', async (req, res) => {
+  try {
+    const events = await prisma.event.findMany({
+      orderBy: { date: 'asc' }
+    });
+    res.json(events);
+  } catch (error) {
+    console.error('Erro ao buscar eventos:', error);
+    res.status(500).json({ error: 'Erro ao buscar eventos' });
+  }
+});
+
+app.get('/events/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const event = await prisma.event.findUnique({
+      where: { id: parseInt(id) },
+      include: { tickets: true }
+    });
+    
+    if (!event) {
+      return res.status(404).json({ error: 'Evento não encontrado' });
+    }
+    
+    res.json(event);
+  } catch (error) {
+    console.error('Erro ao buscar evento:', error);
+    res.status(500).json({ error: 'Erro ao buscar evento' });
+  }
+});
+
+app.post('/events', async (req, res) => {
+  const { title, description, date, price, location, address, city, state, capacity, category } = req.body;
+  
+  if (!title || !date || !price || !location) {
+    return res.status(400).json({ error: 'Campos obrigatórios faltando' });
+  }
+  
+  try {
+    const event = await prisma.event.create({
+      data: {
+        title,
+        description: description || '',
+        date: new Date(date),
+        price: parseFloat(price),
+        location,
+        address: address || '',
+        city: city || '',
+        state: state || '',
+        capacity: parseInt(capacity) || 100,
+        category: category || 'Geral'
+      }
+    });
+    
+    res.status(201).json(event);
+  } catch (error) {
+    console.error('Erro ao criar evento:', error);
+    res.status(500).json({ error: 'Erro ao criar evento' });
+  }
+});
+
 app.get('/sessions', async (req, res) => {
   try {
     const sessions = await prisma.session.findMany({ 
@@ -598,6 +661,155 @@ app.post('/purchase', async (req, res) => {
       return res.status(409).json({ error: error.message });
     }
     res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Payment endpoints
+app.post('/payment/process', async (req, res) => {
+  const { userId, method, totalAmount, paymentData, ticketDetails } = req.body;
+  
+  if (!userId || !method || !totalAmount || !ticketDetails) {
+    return res.status(400).json({ error: 'Dados incompletos para o pagamento' });
+  }
+  
+  if (!['CREDITO', 'DEBITO', 'PIX'].includes(method)) {
+    return res.status(400).json({ error: 'Método de pagamento inválido' });
+  }
+  
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(userId) }
+    });
+    
+    if (!user) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    
+    // Gerar código PIX aleatório se for PIX
+    let pixCode = null;
+    if (method === 'PIX') {
+      pixCode = 'PIX-' + Math.random().toString(36).substring(2, 15).toUpperCase();
+    }
+    
+    // Salvar pagamento
+    const payment = await prisma.payment.create({
+      data: {
+        userId: parseInt(userId),
+        method,
+        totalAmount,
+        status: 'COMPLETED',
+        paymentData: JSON.stringify(paymentData || {}),
+        pixCode,
+        ticketDetails: JSON.stringify(ticketDetails)
+      }
+    });
+    
+    // Parsear detalhes dos ingressos e criar tickets
+    const tickets = [];
+    try {
+      const ticketsData = Array.isArray(ticketDetails) ? ticketDetails : JSON.parse(ticketDetails);
+      
+      for (const ticketData of ticketsData) {
+        const ticket = await prisma.ticket.create({
+          data: {
+            userId: parseInt(userId),
+            sessionId: parseInt(ticketData.sessionId),
+            seatId: parseInt(ticketData.seatId),
+            price: parseFloat(ticketData.price)
+          }
+        });
+        tickets.push(ticket);
+      }
+    } catch (error) {
+      console.error('Erro ao criar tickets:', error);
+    }
+    
+    res.status(201).json({
+      message: 'Pagamento processado com sucesso',
+      payment: {
+        id: payment.id,
+        method: payment.method,
+        status: payment.status,
+        pixCode: payment.pixCode,
+        totalAmount: payment.totalAmount
+      },
+      tickets
+    });
+  } catch (error) {
+    console.error('Erro ao processar pagamento:', error);
+    res.status(500).json({ error: 'Erro ao processar pagamento' });
+  }
+});
+
+app.get('/user/:userId/tickets', async (req, res) => {
+  const { userId } = req.params;
+  
+  try {
+    const tickets = await prisma.ticket.findMany({
+      where: { userId: parseInt(userId) },
+      include: {
+        session: {
+          include: {
+            movie: true,
+            hall: true
+          }
+        },
+        seat: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    res.json(tickets);
+  } catch (error) {
+    console.error('Erro ao buscar ingressos:', error);
+    res.status(500).json({ error: 'Erro ao buscar ingressos' });
+  }
+});
+
+app.get('/user/:userId/event-tickets', async (req, res) => {
+  const { userId } = req.params;
+  
+  try {
+    const eventTickets = await prisma.eventTicket.findMany({
+      where: { userId: parseInt(userId) },
+      include: {
+        event: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    
+    res.json(eventTickets);
+  } catch (error) {
+    console.error('Erro ao buscar ingressos de eventos:', error);
+    res.status(500).json({ error: 'Erro ao buscar ingressos de eventos' });
+  }
+});
+
+app.post('/purchase-event', async (req, res) => {
+  const { userId, eventId, price, ticketType, seatNumber } = req.body;
+  
+  if (!userId || !eventId || !price || !ticketType) {
+    return res.status(400).json({ error: 'Dados incompletos para compra' });
+  }
+  
+  try {
+    const eventTicket = await prisma.eventTicket.create({
+      data: {
+        userId: parseInt(userId),
+        eventId: parseInt(eventId),
+        price: parseFloat(price),
+        ticketType,
+        seatNumber: seatNumber || null
+      }
+    });
+    
+    res.status(201).json({
+      message: 'Ingresso de evento criado com sucesso',
+      eventTicket
+    });
+  } catch (error) {
+    console.error('Erro ao criar ingresso de evento:', error);
+    res.status(500).json({ error: 'Erro ao criar ingresso de evento' });
   }
 });
 

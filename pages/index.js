@@ -52,15 +52,18 @@ export default function Home() {
 
   const loadBannerMovies = useCallback(async () => {
     try {
-      const bannerMovieIds = [1197137, 617126, 1311031];
+      //Busca os filmes em alta da semana
+      const trendingResponse = await api.getTMDBTrending(1, 'week');
+      //Pega os 3 primeiros
+      const top3Movies = trendingResponse.results.slice(0, 3);
+      //Busca detalhes de cada um 
       const bannerMovies = [];
-      
-      for (const movieId of bannerMovieIds) {
+      for (const movie of top3Movies) {
         try {
-          const movieData = await api.getTMDBMovieDetails(movieId);
+          const movieData = await api.getTMDBMovieDetails(movie.id);
           bannerMovies.push(movieData);
         } catch (error) {
-          console.error(`Erro ao buscar filme ${movieId}:`, error);
+          console.error(`Erro ao buscar detalhes do filme ${movie.id}:`, error);
         }
       }
       
@@ -171,6 +174,12 @@ export default function Home() {
             {user ? (
               <div className="flex items-center space-x-4">
                 <span className="text-gray-700">Olá, {user.name}</span>
+                <button
+                  onClick={() => router.push("/perfil")}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition-colors text-sm"
+                >
+                  👤 Perfil
+                </button>
                 <button
                   onClick={logout}
                   className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full transition-colors"

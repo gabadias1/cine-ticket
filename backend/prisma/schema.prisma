@@ -15,6 +15,7 @@ model User {
   password     String
   tickets      Ticket[]
   eventTickets EventTicket[]
+  payments     Payment[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
@@ -155,7 +156,7 @@ model Ticket {
   id          Int       @id @default(autoincrement())
   userId      Int
   sessionId   Int
-  seatId      Int
+  seatId      Int?
   price       Float
   status      String    @default("ACTIVE") // ACTIVE, USED, CANCELLED, REFUNDED
   qrCode      String?   // QR Code para validação
@@ -163,6 +164,20 @@ model Ticket {
   validatedAt DateTime?
   user        User      @relation(fields: [userId], references: [id])
   session     Session   @relation(fields: [sessionId], references: [id])
-  seat        Seat      @relation(fields: [seatId], references: [id])
+  seat        Seat?     @relation(fields: [seatId], references: [id])
   @@unique([sessionId, seatId])
+}
+
+model Payment {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  method          String    // CREDITO, DEBITO, PIX
+  totalAmount     Float
+  status          String    @default("PENDING") // PENDING, COMPLETED, FAILED, CANCELLED
+  paymentData     String    // JSON com dados do pagamento (sem números de cartão)
+  pixCode         String?   // Código PIX aleatório gerado
+  ticketDetails   String    // JSON com detalhes dos ingressos (sessionId, seatId, price, type)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id])
 }
