@@ -378,6 +378,18 @@ export default function Eventos() {
     });
   }, [events, filterCity, filterCategory, filterDate, searchQuery]);
 
+  // Heurística localizada apenas para a aba de eventos: identifica se o evento possui palco/assentos
+  // (não mexe em outros lugares do site). Retorna true para eventos que deverão usar a página
+  // de mapa/assentos (`/assentos/[id]4`). Base simples em categoria e nomes/benefícios dos setores.
+  function isStagedEvent(ev) {
+    if (!ev) return false;
+    const stagedCategories = ['Teatro', 'Musical', 'Concerto', 'Show', 'Stand-up', 'Ballet', 'Circo'];
+    if (stagedCategories.includes(ev.category)) return true;
+    if (ev.sectors && ev.sectors.some(s => /plateia|camarote|balc[ãa]o|arquibancada|arena/i.test(s.name))) return true;
+    if (ev.sectors && ev.sectors.some(s => s.benefits && s.benefits.some(b => /assento|assentos|assentos numerad/i.test(b)))) return true;
+    return false;
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -538,8 +550,8 @@ export default function Eventos() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">{ev.category}</span>
                     <button
-                      onClick={() => setModalEvent(ev)}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                      onClick={() => { setTicketCount(1); setModalEvent(ev); }}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
                     >
                       Ver mais
                     </button>
@@ -553,7 +565,7 @@ export default function Eventos() {
         {/* Modal de detalhes */}
         {modalEvent && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 relative">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 relative max-h-[85vh] overflow-y-auto">
               <button
                 className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
                 onClick={() => setModalEvent(null)}
@@ -578,63 +590,82 @@ export default function Eventos() {
               </div>
 
               <div className="mt-6">
-                <h4 className="text-xl font-semibold mb-4">Setores disponíveis</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {modalEvent.sectors.map((sector, index) => (
-                    <div key={index} className="border rounded-lg p-4 hover:border-blue-500 transition-colors">
-                      <div className="flex justify-between items-start mb-2">
-                        <h5 className="font-bold text-lg">{sector.name}</h5>
-                        <span className="text-lg font-semibold text-blue-600">
-                          R$ {sector.price.toFixed(2)}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-3">{sector.description}</p>
-                      <div className="space-y-2">
-                        <div className="text-sm text-gray-500">
-                          <span className="font-medium">Capacidade:</span> {sector.capacity} pessoas
+                {isStagedEvent(modalEvent) ? (
+                  <>
+                    <h4 className="text-xl font-semibold mb-4">Setores disponíveis</h4>
+                    <div className="space-y-4 mb-6">
+                      {modalEvent.sectors.map((sector, index) => (
+                        <div key={index} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                          <div className="flex justify-between items-start mb-2">
+                            <h5 className="font-bold text-lg text-gray-800">{sector.name}</h5>
+                            <span className="text-lg font-bold text-blue-600">R$ {sector.price.toFixed(2)}</span>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{sector.description}</p>
+                          <div className="text-xs text-gray-500 mb-2">
+                            <span className="font-medium">Capacidade:</span> {sector.capacity} lugares
+                          </div>
+                          {sector.benefits && sector.benefits.length > 0 && (
+                            <div className="text-xs text-gray-600">
+                              <span className="font-medium">Benefícios:</span> {sector.benefits.join(', ')}
+                            </div>
+                          )}
                         </div>
-                        <div className="text-sm">
-                          <span className="font-medium">Benefícios:</span>
-                          <ul className="list-disc list-inside mt-1 text-gray-600">
-                            {sector.benefits.map((benefit, i) => (
-                              <li key={i}>{benefit}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => { 
-                          if (!user) {
-                            router.push('/login');
-                            return;
-                          }
-                          // Redirecionar para pagamento com dados do evento
-                          router.push({
-                            pathname: '/pagamento',
-                            query: {
-                              tipo: 'evento',
-                              eventId: modalEvent.id,
-                              eventName: modalEvent.name,
-                              sector: sector.name,
-                              price: sector.price,
-                              eventDate: modalEvent.date
-                            }
-                          });
-                          setModalEvent(null);
-                        }}
-                        className="mt-4 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors"
-                      >
-                        Comprar Ingresso
-                      </button>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                    <button
+                      onClick={() => {
+                        setModalEvent(null);
+                        router.push({ pathname: '/assentos/[id]4', query: { id: modalEvent.id, eventId: modalEvent.id } });
+                      }}
+                      className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      Comprar ingresso
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <h4 className="text-xl font-semibold mb-4">Comprar ingresso</h4>
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="flex items-center border rounded-md px-2 py-1">
+                        <button 
+                          onClick={() => setTicketCount(Math.max(1, ticketCount - 1))} 
+                          className="px-3 py-1 hover:bg-gray-100 rounded transition-colors"
+                        >
+                          -
+                        </button>
+                        <div className="px-4 font-bold">{ticketCount}</div>
+                        <button 
+                          onClick={() => setTicketCount(Math.min(10, ticketCount + 1))} 
+                          className="px-3 py-1 hover:bg-gray-100 rounded transition-colors"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <div className="text-sm text-gray-700">
+                        Preço por ingresso: <span className="font-semibold text-blue-600">R$ {Math.min(...modalEvent.sectors.map(s => s.price)).toFixed(2)}</span>
+                      </div>
+                      <div className="ml-auto text-sm font-bold">
+                        Total: <span className="text-green-600">R$ {(Math.min(...modalEvent.sectors.map(s => s.price)) * ticketCount).toFixed(2)}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        // Seguir para pagamento/login com quantidade selecionada
+                        setModalEvent(null);
+                        router.push({ pathname: '/login', query: { eventId: modalEvent.id, qty: ticketCount } });
+                      }}
+                      className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                    >
+                      Ir para pagamento
+                    </button>
+                  </>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 mt-6">
                 <button 
                   onClick={() => setModalEvent(null)} 
-                  className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   Fechar
                 </button>
@@ -646,5 +677,3 @@ export default function Eventos() {
     </div>
   );
 }
-
-
