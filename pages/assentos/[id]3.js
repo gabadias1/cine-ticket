@@ -93,10 +93,30 @@ export default function CinemaSeatsC() {
   const limpar = () => setSelecionados(new Map());
 
   const pagar = () => {
-    if (selecionados.size === 0) { alert('Nenhum assento selecionado!'); return; }
-    if (!user) { alert('Você precisa estar logado para comprar ingressos!'); router.push('/login'); return; }
-    const pedido = Array.from(selecionados.entries()).map(([id, info]) => ({ id, ...info }));
-    alert('Pedido:\n' + JSON.stringify(pedido, null, 2));
+    if (selecionados.size === 0) { 
+      alert('Nenhum assento selecionado!'); 
+      return; 
+    }
+    if (!user) { 
+      alert('Você precisa estar logado para comprar ingressos!'); 
+      router.push('/login'); 
+      return; 
+    }
+    
+    // Preparar dados dos ingressos
+    const { movieId, sessionId } = router.query;
+    const ingressos = Array.from(selecionados.entries()).map(([seatId, info]) => ({
+      seatId: seatId,
+      sessionId: parseInt(sessionId),
+      tipo: info.ingresso,
+      preco: info.preco
+    }));
+    
+    // Salvar dados no sessionStorage para recuperar na página de pagamento
+    sessionStorage.setItem('ingressoData', JSON.stringify(ingressos));
+    
+    // Redirecionar para a página de pagamento
+    router.push(`/pagamento?ingressos=${encodeURIComponent(JSON.stringify(ingressos))}`);
   };
 
   const total = Array.from(selecionados.values()).reduce((s, v) => s + v.preco, 0);

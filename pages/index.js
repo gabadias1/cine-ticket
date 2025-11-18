@@ -175,6 +175,12 @@ export default function Home() {
               <div className="flex items-center space-x-4">
                 <span className="text-gray-700">Olá, {user.name}</span>
                 <button
+                  onClick={() => router.push("/perfil")}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition-colors text-sm"
+                >
+                  👤 Perfil
+                </button>
+                <button
                   onClick={logout}
                   className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full transition-colors"
                 >
