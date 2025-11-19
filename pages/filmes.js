@@ -15,6 +15,7 @@ export default function Filmes() {
   const [selectedGenre, setSelectedGenre] = useState('');
   const [showTMDBResults, setShowTMDBResults] = useState(false);
   const [tmdbResults, setTmdbResults] = useState([]);
+  const [error, setError] = useState('');
   const searchInputRef = useRef(null);
 
   const focusSearchInput = useCallback(() => {
@@ -27,20 +28,75 @@ export default function Filmes() {
   useEffect(() => {
     const loadData = async () => {
       try {
+        setIsLoading(true);
+        setError('');
         console.log('Iniciando carregamento de dados...');
         
-        // Carregar filmes populares do TMDB
-        const tmdbData = await api.getTMDBPopular(1);
-        console.log('Filmes TMDB carregados:', tmdbData);
+        let moviesData = [];
         
-        const moviesData = tmdbData.results || [];
+        // Priorizar banco local (tem todos os filmes sincronizados)
+        try {
+          const localMovies = await api.getMovies();
+          console.log('Filmes do banco local carregados:', localMovies.length);
+          
+          // Converter filmes locais para formato similar ao TMDB
+          moviesData = localMovies.map(movie => {
+            // Construir URL do poster corretamente
+            let posterPath = movie.posterPath || movie.imageUrl || null;
+            if (posterPath) {
+              if (posterPath.startsWith('http')) {
+                // Já é uma URL completa, usar como está
+              } else if (posterPath.startsWith('/')) {
+                // Caminho do TMDB (ex: /abc123.jpg), adicionar base URL
+                posterPath = `https://image.tmdb.org/t/p/w500${posterPath}`;
+              } else {
+                // Caminho sem barra inicial, adicionar barra e base URL
+                posterPath = `https://image.tmdb.org/t/p/w500/${posterPath}`;
+              }
+            }
+            
+            return {
+              id: movie.tmdbId || movie.id,
+              title: movie.title,
+              overview: movie.synopsis || '',
+              poster_path: posterPath,
+              release_date: movie.releaseDate ? new Date(movie.releaseDate).toISOString().split('T')[0] : null,
+              vote_average: movie.voteAverage || 0,
+              adult: false,
+              genre_ids: []
+            };
+          });
+          
+          console.log('Filmes processados do banco local:', moviesData.length, 'filmes');
+        } catch (localError) {
+          console.warn('Erro ao carregar do banco local, tentando TMDB:', localError);
+          
+          // Fallback: tentar carregar do TMDB se o banco local falhar
+          try {
+            const tmdbData = await api.getTMDBPopular(1);
+            console.log('Filmes TMDB carregados:', tmdbData);
+            
+            // Verificar se a resposta tem a estrutura esperada
+            moviesData = tmdbData?.results || tmdbData?.data?.results || [];
+            console.log('Filmes processados do TMDB:', moviesData.length, 'filmes');
+          } catch (tmdbError) {
+            console.error('Erro ao carregar do TMDB:', tmdbError);
+            throw new Error('Não foi possível carregar filmes. Verifique sua conexão.');
+          }
+        }
+        
+        if (moviesData.length === 0) {
+          console.warn('Nenhum filme encontrado');
+          setError('Nenhum filme encontrado. Tente novamente mais tarde.');
+        }
+        
         setMovies(moviesData);
         setFilteredMovies(moviesData);
         
         // Carregar gêneros separadamente (não é crítico)
         try {
           const genresData = await api.getTMDBGenres();
-          setGenres(genresData.genres || []);
+          setGenres(genresData?.genres || genresData?.data?.genres || []);
         } catch (genresError) {
           console.warn('Erro ao carregar gêneros:', genresError);
           setGenres([]);
@@ -48,6 +104,8 @@ export default function Filmes() {
         
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
+        console.error('Detalhes do erro:', error.message, error.stack);
+        setError(error.message || 'Erro ao carregar filmes. Tente novamente mais tarde.');
         // Se não conseguir carregar filmes, mostrar lista vazia
         setMovies([]);
         setFilteredMovies([]);
@@ -148,19 +206,27 @@ export default function Filmes() {
               </svg>
             </button>
             {user ? (
-              <div className="flex items-center space-x-4">
-                <span className="text-gray-700">Olá, {user.name}</span>
+              <div className="flex items-center space-x-3">
+                <span className="text-gray-700 hidden sm:inline text-sm font-medium">Olá, {user.name}</span>
                 <button
                   onClick={() => router.push("/perfil")}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full transition-colors text-sm"
+                  className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
+                  title="Meu Perfil"
                 >
-                  👤 Perfil
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span>Perfil</span>
                 </button>
                 <button
                   onClick={logout}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full transition-colors"
+                  className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
+                  title="Sair"
                 >
-                  Sair
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span>Sair</span>
                 </button>
               </div>
             ) : (
@@ -180,6 +246,23 @@ export default function Filmes() {
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-bold text-gray-800">Todos os Filmes</h2>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <p className="font-semibold">Erro ao carregar filmes</p>
+            <p className="text-sm">{error}</p>
+            <button
+              onClick={() => {
+                setError('');
+                window.location.reload();
+              }}
+              className="mt-2 text-sm underline hover:no-underline"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        )}
 
         {/* Search and Filters */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
@@ -245,19 +328,29 @@ export default function Filmes() {
                   className="bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl group"
                 >
                   <div className="relative">
-                    <div className="aspect-w-2 aspect-h-3">
-                      <img
-                        src={movie.poster_path 
-                          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                          : 'https://via.placeholder.com/300x450?text=Poster'
-                        }
-                        alt={movie.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = 'https://via.placeholder.com/300x450?text=Poster';
-                        }}
-                      />
+                    <div className="aspect-w-2 aspect-h-3 bg-gray-200 flex items-center justify-center relative">
+                      {movie.poster_path ? (
+                        <img
+                          src={movie.poster_path.startsWith('http') 
+                            ? movie.poster_path 
+                            : `https://image.tmdb.org/t/p/w500${movie.poster_path.startsWith('/') ? movie.poster_path : '/' + movie.poster_path}`}
+                          alt={movie.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            const placeholder = e.target.parentElement.querySelector('.poster-placeholder');
+                            if (placeholder) placeholder.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div className={`poster-placeholder absolute inset-0 flex items-center justify-center bg-gray-200 ${movie.poster_path ? 'hidden' : 'flex'}`}>
+                        <div className="text-center text-gray-400">
+                          <svg className="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <p className="text-xs">Sem poster</p>
+                        </div>
+                      </div>
                     </div>
                     <div className="absolute top-2 right-2 bg-yellow-400 text-xs font-bold px-2 py-1 rounded-full">
                       ⭐ {movie.vote_average?.toFixed(1) || 'N/A'}
@@ -303,19 +396,29 @@ export default function Filmes() {
                   className="bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl group h-full flex flex-col"
                 >
                   <div className="relative">
-                    <div className="aspect-w-2 aspect-h-3">
-                      <img
-                        src={movie.poster_path 
-                          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-                          : 'https://via.placeholder.com/300x450?text=Poster'
-                        }
-                        alt={movie.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = 'https://via.placeholder.com/300x450?text=Poster';
-                        }}
-                      />
+                    <div className="aspect-w-2 aspect-h-3 bg-gray-200 flex items-center justify-center relative">
+                      {movie.poster_path ? (
+                        <img
+                          src={movie.poster_path.startsWith('http') 
+                            ? movie.poster_path 
+                            : `https://image.tmdb.org/t/p/w500${movie.poster_path.startsWith('/') ? movie.poster_path : '/' + movie.poster_path}`}
+                          alt={movie.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            const placeholder = e.target.parentElement.querySelector('.poster-placeholder');
+                            if (placeholder) placeholder.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
+                      <div className={`poster-placeholder absolute inset-0 flex items-center justify-center bg-gray-200 ${movie.poster_path ? 'hidden' : 'flex'}`}>
+                        <div className="text-center text-gray-400">
+                          <svg className="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <p className="text-xs">Sem poster</p>
+                        </div>
+                      </div>
                     </div>
                     <div className="absolute top-2 right-2 bg-yellow-400 text-xs font-bold px-2 py-1 rounded-full">
                       {movie.vote_average ? `⭐ ${movie.vote_average.toFixed(1)}` : '⭐ N/A'}

@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const prisma = require('./prismaClient');
 const tmdbService = require('./tmdbService');
+const ticketmasterService = require('./ticketmasterService');
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
@@ -109,6 +110,31 @@ app.get('/movies', async (req, res) => {
   }
 });
 
+app.get('/movies/:id', async (req, res) => {
+  const { id } = req.params;
+  const movieId = parseInt(id);
+  
+  if (isNaN(movieId)) {
+    return res.status(400).json({ error: 'ID inválido' });
+  }
+  
+  try {
+    const movie = await prisma.movie.findUnique({
+      where: { id: movieId },
+      include: { sessions: true }
+    });
+    
+    if (!movie) {
+      return res.status(404).json({ error: 'Filme não encontrado' });
+    }
+    
+    res.json(movie);
+  } catch (error) {
+    console.error('Erro ao buscar filme:', error);
+    res.status(500).json({ error: 'Erro ao buscar filme' });
+  }
+});
+
 app.post('/movies', async (req, res) => {
   const { title, synopsis, duration, rating } = req.body;
   
@@ -156,6 +182,17 @@ app.delete('/movies/:id', async (req, res) => {
 const validatePage = (page) => {
   const pageNum = parseInt(page);
   return !isNaN(pageNum) && pageNum > 0 ? pageNum : 1;
+};
+
+const parseTicketmasterPage = (page) => {
+  const num = parseInt(page);
+  return Number.isNaN(num) || num < 0 ? 0 : num;
+};
+
+const parseTicketmasterSize = (size) => {
+  const num = parseInt(size);
+  if (Number.isNaN(num)) return 20;
+  return Math.min(Math.max(num, 1), 100);
 };
 
 app.get('/tmdb/popular', async (req, res) => {
@@ -445,19 +482,6 @@ app.post('/cinemas', async (req, res) => {
   } catch (error) {
     console.error('Erro ao criar cinema:', error);
     res.status(500).json({ error: 'Erro ao criar cinema' });
-  }
-});
-
-// Events endpoints
-app.get('/events', async (req, res) => {
-  try {
-    const events = await prisma.event.findMany({
-      orderBy: { date: 'asc' }
-    });
-    res.json(events);
-  } catch (error) {
-    console.error('Erro ao buscar eventos:', error);
-    res.status(500).json({ error: 'Erro ao buscar eventos' });
   }
 });
 
@@ -788,7 +812,7 @@ app.get('/user/:userId/event-tickets', async (req, res) => {
 app.post('/purchase-event', async (req, res) => {
   const { userId, eventId, price, ticketType, seatNumber } = req.body;
   
-  if (!userId || !eventId || !price || !ticketType) {
+  if (!userId || !eventId || price === undefined || price === null || !ticketType) {
     return res.status(400).json({ error: 'Dados incompletos para compra' });
   }
   
@@ -810,6 +834,100 @@ app.post('/purchase-event', async (req, res) => {
   } catch (error) {
     console.error('Erro ao criar ingresso de evento:', error);
     res.status(500).json({ error: 'Erro ao criar ingresso de evento' });
+  }
+});
+
+// ==================== TICKETMASTER API ENDPOINTS ====================
+
+app.get('/ticketmaster/events', async (req, res) => {
+  try {
+    const page = parseTicketmasterPage(req.query.page);
+    const size = parseTicketmasterSize(req.query.size);
+
+    const params = {
+      page,
+      size,
+      keyword: req.query.keyword,
+      city: req.query.city,
+      stateCode: req.query.stateCode,
+      segmentName: req.query.segmentName,
+      classificationName: req.query.classificationName,
+      sort: req.query.sort
+    };
+
+    Object.keys(params).forEach((key) => params[key] === undefined && delete params[key]);
+
+    const response = await ticketmasterService.searchEvents(params, false);
+    res.json(response);
+  } catch (error) {
+    console.error('Erro ao buscar eventos do Ticketmaster:', error);
+    res.status(500).json({ error: 'Erro ao buscar eventos do Ticketmaster' });
+  }
+});
+
+app.get('/ticketmaster/event/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const response = await ticketmasterService.getEventDetails(id, false);
+    res.json(response);
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return res.status(404).json({ error: 'Evento não encontrado na Ticketmaster' });
+    }
+    console.error('Erro ao buscar detalhes do evento Ticketmaster:', error);
+    res.status(500).json({ error: 'Erro ao buscar detalhes do evento' });
+  }
+});
+
+app.post('/events/sync-ticketmaster', async (req, res) => {
+  const { ticketmasterId } = req.body;
+
+  if (!ticketmasterId) {
+    return res.status(400).json({ error: 'ticketmasterId é obrigatório' });
+  }
+
+  try {
+    const existingEvent = await prisma.event.findUnique({
+      where: { ticketmasterId }
+    });
+
+    if (existingEvent) {
+      return res.status(409).json({
+        error: 'Evento já existe no banco de dados',
+        event: existingEvent
+      });
+    }
+
+    const ticketmasterEvent = await ticketmasterService.getEventDetails(ticketmasterId, false);
+    const eventData = ticketmasterService.convertTicketmasterEventToLocal(ticketmasterEvent);
+
+    const event = await prisma.event.create({
+      data: eventData
+    });
+
+    res.status(201).json({
+      message: 'Evento sincronizado com sucesso',
+      event
+    });
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return res.status(404).json({ error: 'Evento não encontrado na Ticketmaster' });
+    }
+    console.error('Erro ao sincronizar evento Ticketmaster:', error);
+    res.status(500).json({ error: 'Erro ao sincronizar evento' });
+  }
+});
+
+app.get('/events', async (req, res) => {
+  try {
+    const events = await prisma.event.findMany({
+      include: { tickets: true },
+      orderBy: { date: 'asc' }
+    });
+    res.json(events);
+  } catch (error) {
+    console.error('Erro ao buscar eventos:', error);
+    res.status(500).json({ error: 'Erro ao buscar eventos' });
   }
 });
 
@@ -846,6 +964,14 @@ app.get('/', (req, res) => {
       },
       tickets: {
         'POST /purchase': 'Comprar ingresso'
+      },
+      ticketmaster: {
+        'GET /ticketmaster/events': 'Listar eventos públicos do Ticketmaster (Brasil)',
+        'GET /ticketmaster/event/:id': 'Detalhes de evento do Ticketmaster',
+        'POST /events/sync-ticketmaster': 'Sincronizar evento do Ticketmaster para o banco'
+      },
+      events: {
+        'GET /events': 'Listar eventos do banco de dados'
       },
       health: {
         'GET /health': 'Status do servidor'
