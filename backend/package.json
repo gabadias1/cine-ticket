@@ -10,7 +10,11 @@
     "prisma:migrate": "prisma migrate dev --name init",
     "seed": "npx prisma migrate reset --force && node scripts/seed.js",
     "init-db": "prisma generate && prisma migrate deploy",
-    "sync:tmdb:max": "node scripts/syncMaximumMovies.js"
+    "sync:tmdb:max": "node scripts/syncMaximumMovies.js",
+    "sync:ticketmaster:events": "node scripts/syncTicketmasterEvents.js",
+    "diagnose:ticketmaster": "node scripts/diagnoseTicketmaster.js",
+    "update:movies:pt": "node scripts/updateMoviesToPortuguese.js",
+    "test:ticketmaster": "node scripts/testTicketmasterAPI.js"
   },
   "dependencies": {
     "@prisma/client": "^6.18.0",

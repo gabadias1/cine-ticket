@@ -28,12 +28,22 @@ class ApiService {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        const error = new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        // Não logar 404 como erro crítico (pode ser esperado)
+        if (response.status === 404) {
+          // Silenciar 404s - são esperados em alguns casos
+        } else {
+          console.error('API Error:', error);
+        }
+        throw error;
       }
 
       return await response.json();
     } catch (error) {
-      console.error('API Error:', error);
+      // Só logar se não for um 404 (que pode ser esperado)
+      if (!error.message?.includes('404') && !error.message?.includes('Not Found')) {
+        console.error('API Error:', error);
+      }
       throw error;
     }
   }
@@ -56,6 +66,10 @@ class ApiService {
   // Movies endpoints
   async getMovies() {
     return this.request('/movies');
+  }
+
+  async getMovie(id) {
+    return this.request(`/movies/${id}`);
   }
 
   async createMovie(movieData) {
@@ -210,6 +224,33 @@ class ApiService {
     return this.request('/sessions/auto-create', {
       method: 'POST',
       body: JSON.stringify({ movieId }),
+    });
+  }
+
+  // Ticketmaster endpoints
+  async getTicketmasterEvents(params = {}) {
+    const queryParams = new URLSearchParams();
+    if (params.page !== undefined) queryParams.append('page', params.page);
+    if (params.size !== undefined) queryParams.append('size', params.size);
+    if (params.keyword) queryParams.append('keyword', params.keyword);
+    if (params.city) queryParams.append('city', params.city);
+    if (params.stateCode) queryParams.append('stateCode', params.stateCode);
+    if (params.segmentName) queryParams.append('segmentName', params.segmentName);
+    if (params.classificationName) queryParams.append('classificationName', params.classificationName);
+    if (params.sort) queryParams.append('sort', params.sort);
+
+    const queryString = queryParams.toString();
+    return this.request(`/ticketmaster/events${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getTicketmasterEventDetails(id) {
+    return this.request(`/ticketmaster/event/${id}`);
+  }
+
+  async syncTicketmasterEvent(ticketmasterId) {
+    return this.request('/events/sync-ticketmaster', {
+      method: 'POST',
+      body: JSON.stringify({ ticketmasterId }),
     });
   }
 

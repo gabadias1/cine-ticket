@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 const { syncMaximumMoviesFromTMDB } = require('./syncMaximumMovies');
+const { syncTicketmasterEvents } = require('./syncTicketmasterEvents');
 
 const prisma = new PrismaClient();
 
@@ -9,9 +10,11 @@ async function main() {
 
   // Limpar dados existentes
   await prisma.ticket.deleteMany();
+  await prisma.eventTicket.deleteMany();
   await prisma.session.deleteMany();
   await prisma.seat.deleteMany();
   await prisma.movie.deleteMany();
+  await prisma.event.deleteMany();
   await prisma.hall.deleteMany();
   await prisma.cinema.deleteMany();
   await prisma.user.deleteMany();
@@ -203,19 +206,31 @@ async function main() {
   await ensureSessionsForMovies();
 
   const hasTMDBCredentials = process.env.TMDB_API_KEY && process.env.TMDB_ACCESS_TOKEN;
+  const hasTicketmasterCredentials = process.env.TICKETMASTER_API_KEY;
 
   if (hasTMDBCredentials) {
-    console.log('\n Sincronizando catálogo completo da TMDB...');
+    console.log('\n🎬 Sincronizando catálogo completo da TMDB...');
     try {
       await syncMaximumMoviesFromTMDB();
 
-      console.log('\n Garantindo sessões para todos os filmes...');
+      console.log('\n🎟️ Garantindo sessões para todos os filmes...');
       await ensureSessionsForMovies();
     } catch (error) {
-      console.error(' Falha ao sincronizar catálogo TMDB:', error.message);
+      console.error('❌ Falha ao sincronizar catálogo TMDB:', error.message);
     }
   } else {
-    console.warn('\n  Variáveis TMDB_API_KEY/TMDB_ACCESS_TOKEN não presentes. Pulando sincronização TMDB.');
+    console.warn('\n⚠️  Variáveis TMDB_API_KEY/TMDB_ACCESS_TOKEN não presentes. Pulando sincronização TMDB.');
+  }
+
+  if (hasTicketmasterCredentials) {
+    console.log('\n🎪 Sincronizando eventos do Ticketmaster (Brasil)...');
+    try {
+      await syncTicketmasterEvents();
+    } catch (error) {
+      console.error('❌ Falha ao sincronizar eventos do Ticketmaster:', error.message);
+    }
+  } else {
+    console.warn('\n⚠️  Variável TICKETMASTER_API_KEY não presente. Pulando sincronização de eventos do Ticketmaster.');
   }
 
   console.log('\nSeed concluído com sucesso!');
@@ -225,8 +240,10 @@ async function main() {
 
   const totalMovies = await prisma.movie.count();
   const totalSessions = await prisma.session.count();
+  const totalEvents = await prisma.event.count();
   console.log(`🎬 Total de filmes no banco: ${totalMovies}`);
   console.log(`🎭 Total de sessões geradas (7 dias): ${totalSessions}`);
+  console.log(`🎪 Total de eventos no banco: ${totalEvents}`);
 }
 
 main()
