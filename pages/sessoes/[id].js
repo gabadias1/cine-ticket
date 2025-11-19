@@ -6,7 +6,7 @@ import api from '../../utils/api';
 
 export default function SelecaoSessoes() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { id } = router.query;
   const [movie, setMovie] = useState(null);
   const [sessions, setSessions] = useState([]);
@@ -14,6 +14,7 @@ export default function SelecaoSessoes() {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedCinema, setSelectedCinema] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [movieIdForSessions, setMovieIdForSessions] = useState(null);
   
 
 
@@ -45,9 +46,31 @@ export default function SelecaoSessoes() {
       try {
         setIsLoading(true);
         
-        // Carregar dados do filme do TMDB e sessões
+        let localMovie = null;
+        const tmdbId = parseInt(id);
+        
+        // Todos os IDs vêm do TMDB, então sempre é um tmdbId
+        // Verificar se o filme existe no banco local pelo tmdbId
+        try {
+          const allMovies = await api.getMovies();
+          const movieByTmdbId = allMovies.find(m => m.tmdbId === tmdbId);
+          if (movieByTmdbId) {
+            localMovie = movieByTmdbId;
+          }
+        } catch (searchError) {
+          // Se falhar ao buscar no banco, continuar mesmo assim (filme pode não estar sincronizado)
+          console.warn('Erro ao buscar filmes no banco local:', searchError);
+        }
+
+        // Se não temos um tmdbId válido, redirecionar
+        if (!tmdbId || isNaN(tmdbId)) {
+          router.push('/filmes');
+          return;
+        }
+
+        // Buscar os detalhes do filme no TMDB (sempre do TMDB)
         const [tmdbData, sessionsData, cinemasData] = await Promise.all([
-          api.getTMDBPopular().then(data => data.results?.find(m => m.id === parseInt(id))),
+          api.getTMDBMovieDetails(tmdbId),
           api.getSessions(),
           api.getCinemas()
         ]);
@@ -58,6 +81,12 @@ export default function SelecaoSessoes() {
         }
 
         setMovie(tmdbData);
+        
+        // Usar o ID do banco local se disponível, senão usar o tmdbId para sessões sintéticas
+        // Como todos os IDs vêm do TMDB, usamos o tmdbId diretamente
+        const movieIdForSessionsValue = localMovie ? localMovie.id : tmdbId;
+        setMovieIdForSessions(movieIdForSessionsValue);
+        
         const extraCinemaBaseId = 9000000;
         const extraCinemas = [
           { id: extraCinemaBaseId + 1, name: 'Cine Avenida' },
@@ -82,7 +111,7 @@ export default function SelecaoSessoes() {
             times.forEach((time) => {
               generatedSessions.push({
                 id: syntheticSessionId--,
-                movieId: tmdbData.id,
+                movieId: movieIdForSessionsValue,
                 hallId: cinema.id,
                 startsAt: `${dateStr}T${time}`
               });
@@ -130,7 +159,7 @@ export default function SelecaoSessoes() {
 
               primaryExtraSessions.push({
                 id: syntheticSessionId--,
-                movieId: tmdbData.id,
+                movieId: movieIdForSessionsValue,
                 hallId: primaryCinema.id,
                 startsAt: `${dateStr}T${time}`
               });
@@ -147,6 +176,8 @@ export default function SelecaoSessoes() {
         
       } catch (error) {
         console.error('Erro ao carregar dados:', error);
+        // Se o filme não foi encontrado ou houve erro, redirecionar para /filmes
+        router.push('/filmes');
       } finally {
         setIsLoading(false);
       }
@@ -158,16 +189,25 @@ export default function SelecaoSessoes() {
   }, [id]);
 
   // Filtrar sessões baseado na data, cinema e filtros selecionados
-  const filteredSessions = sessions.filter(session => {
-    const sessionDate = new Date(session.startsAt).toISOString().split('T')[0];
-    const matchesDate = !selectedDate || sessionDate === selectedDate;
-    const matchesCinema = !selectedCinema || session.hallId.toString() === selectedCinema;
+  const filteredSessions = useMemo(() => {
+    // Usar o movieIdForSessions se disponível (ID do banco local), senão usar o tmdbId
+    const movieIdForFilter = movieIdForSessions || parseInt(id);
+    const tmdbId = parseInt(id);
     
-    // Aqui você pode adicionar lógica para filtros específicos
-    // Por enquanto, vamos apenas filtrar por data e cinema
-    
-    return matchesDate && matchesCinema && session.movieId === parseInt(id);
-  });
+    return sessions.filter(session => {
+      const sessionDate = new Date(session.startsAt).toISOString().split('T')[0];
+      const matchesDate = !selectedDate || sessionDate === selectedDate;
+      const matchesCinema = !selectedCinema || session.hallId.toString() === selectedCinema;
+      
+      // Filtrar por movieId - aceitar ID do banco local ou tmdbId
+      const matchesMovie = session.movieId === movieIdForFilter || 
+                          session.movieId?.toString() === movieIdForFilter?.toString() ||
+                          session.movieId === tmdbId ||
+                          session.movieId?.toString() === tmdbId?.toString();
+      
+      return matchesDate && matchesCinema && matchesMovie;
+    });
+  }, [sessions, selectedDate, selectedCinema, id, movieIdForSessions]);
 
   // Agrupar sessões por cinema
   const sessionsByCinema = filteredSessions.reduce((acc, session) => {
@@ -253,13 +293,30 @@ export default function SelecaoSessoes() {
               </svg>
             </button>
             {user ? (
-              <div className="flex items-center space-x-4">
-                <span className="text-gray-700">Olá, {user.name}</span>
+              <div className="flex items-center space-x-3">
+                <span className="text-gray-700 hidden sm:inline text-sm font-medium">Olá, {user.name}</span>
                 <button
-                  onClick={() => router.push("/login")}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full transition-colors"
+                  onClick={() => router.push("/perfil")}
+                  className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
+                  title="Meu Perfil"
                 >
-                  Sair
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span>Perfil</span>
+                </button>
+                <button
+                  onClick={() => {
+                    logout();
+                    router.push('/');
+                  }}
+                  className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
+                  title="Sair"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span>Sair</span>
                 </button>
               </div>
             ) : (

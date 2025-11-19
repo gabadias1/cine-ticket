@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
+import LocationSelector from '../components/LocationSelector';
 
 export default function Pagamento() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [metodo, setMetodo] = useState('CREDITO');
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState('');
@@ -267,37 +268,107 @@ export default function Pagamento() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 py-4 px-6 shadow-sm">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center space-x-8">
+            <button onClick={() => router.push("/")} className="flex items-center space-x-3 h-10">
+              <img src="/images/logo.png" alt="CineTicket" className="h-full w-auto object-contain" />
+            </button>
+            
+            {/* Location Selector */}
+            <LocationSelector />
+            
+            <nav className="hidden lg:flex space-x-8">
+              <button
+                onClick={() => router.push("/filmes")}
+                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
+              >
+                Filmes
+              </button>
+              <button
+                onClick={() => router.push("/eventos")}
+                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
+              >
+                Eventos
+              </button>
+            </nav>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            {user ? (
+              <div className="flex items-center space-x-3">
+                <span className="text-gray-700 hidden sm:inline text-sm font-medium">Olá, {user.name}</span>
+                <button
+                  onClick={() => router.push("/perfil")}
+                  className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
+                  title="Meu Perfil"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span>Perfil</span>
+                </button>
+                <button
+                  onClick={() => {
+                    logout();
+                    router.push('/');
+                  }}
+                  className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
+                  title="Sair"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  <span>Sair</span>
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => router.push("/login")}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors font-medium"
+              >
+                Entrar
+              </button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-4 py-8">
+        {/* Breadcrumb */}
+        <div className="mb-6">
           <button
             onClick={voltarAssentos}
-            className="text-red-500 hover:text-red-400 mb-4 flex items-center gap-2"
+            className="text-gray-600 hover:text-blue-600 mb-4 flex items-center gap-2 transition-colors"
           >
-            ← Voltar
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            Voltar
           </button>
-          <h1 className="text-4xl font-bold mb-2">💳 Pagamento</h1>
-          <p className="text-gray-400">Escolha a forma de pagamento para seus ingressos</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">💳 Pagamento</h1>
+          <p className="text-gray-600">Escolha a forma de pagamento para seus ingressos</p>
         </div>
 
         {/* Resumo dos ingressos */}
         {(ingressos.length > 0 || eventoData) && (
-          <div className="bg-gray-800 rounded-lg p-6 mb-8 border border-gray-700">
-            <h2 className="text-xl font-bold mb-4">Resumo do Pedido</h2>
+          <div className="bg-white rounded-lg p-6 mb-8 border border-gray-200 shadow-md">
+            <h2 className="text-xl font-bold mb-4 text-gray-800">Resumo do Pedido</h2>
             
             {tipoCompra === 'evento' && eventoData ? (
               <div className="space-y-2 mb-4">
-                <div className="flex justify-between text-gray-300">
+                <div className="flex justify-between text-gray-700">
                   <span>Evento: {eventoData.name}</span>
                 </div>
-                <div className="flex justify-between text-gray-300">
+                <div className="flex justify-between text-gray-700">
                   <span>Setor: {eventoData.sector}</span>
                 </div>
-                <div className="flex justify-between text-gray-300">
+                <div className="flex justify-between text-gray-700">
                   <span>Data: {eventoData.date}</span>
                 </div>
-                <div className="flex justify-between text-gray-300">
+                <div className="flex justify-between text-gray-700">
                   <span>Ingresso</span>
                   <span>R$ {eventoData.price?.toFixed(2) || '0.00'}</span>
                 </div>
@@ -305,7 +376,7 @@ export default function Pagamento() {
             ) : (
               <div className="space-y-2 mb-4">
                 {ingressos.map((ing, idx) => (
-                  <div key={idx} className="flex justify-between text-gray-300">
+                  <div key={idx} className="flex justify-between text-gray-700">
                     <span>Ingresso {idx + 1} ({ing.tipo})</span>
                     <span>R$ {ing.preco?.toFixed(2) || '0.00'}</span>
                   </div>
@@ -313,10 +384,10 @@ export default function Pagamento() {
               </div>
             )}
             
-            <div className="border-t border-gray-700 pt-4">
+            <div className="border-t border-gray-200 pt-4">
               <div className="flex justify-between text-xl font-bold">
-                <span>Total</span>
-                <span className="text-red-500">R$ {totalPreco.toFixed(2)}</span>
+                <span className="text-gray-800">Total</span>
+                <span className="text-red-600">R$ {totalPreco.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -324,18 +395,18 @@ export default function Pagamento() {
 
         {/* Mensagens */}
         {erro && (
-          <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg mb-6">
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6">
             {erro}
           </div>
         )}
         {sucesso && (
-          <div className="bg-green-900 border border-green-700 text-green-200 px-4 py-3 rounded-lg mb-6">
+          <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-6">
             {sucesso}
           </div>
         )}
 
         {/* Métodos de pagamento */}
-        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+        <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-md">
           <div className="grid grid-cols-3 gap-4 mb-8">
             {[
               { id: 'CREDITO', nome: 'Crédito', icon: '💳' },
@@ -351,12 +422,12 @@ export default function Pagamento() {
                 }}
                 className={`p-4 rounded-lg border-2 transition ${
                   metodo === opcao.id
-                    ? 'border-red-500 bg-red-500 bg-opacity-10'
-                    : 'border-gray-700 hover:border-gray-600 bg-gray-700 bg-opacity-30'
+                    ? 'border-red-500 bg-red-50'
+                    : 'border-gray-200 hover:border-gray-300 bg-gray-50'
                 }`}
               >
                 <div className="text-2xl mb-2">{opcao.icon}</div>
-                <div className="font-semibold">{opcao.nome}</div>
+                <div className={`font-semibold ${metodo === opcao.id ? 'text-red-600' : 'text-gray-700'}`}>{opcao.nome}</div>
               </button>
             ))}
           </div>
@@ -378,7 +449,7 @@ export default function Pagamento() {
                       numero: formatarNumeroCartao(e.target.value)
                     })
                   }
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-red-500"
+                  className="w-full bg-white border border-gray-300 rounded px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
                   maxLength="23"
                 />
                 <p className="text-xs text-gray-400 mt-1">
@@ -397,7 +468,7 @@ export default function Pagamento() {
                   onChange={(e) =>
                     setCartao({ ...cartao, titular: e.target.value.toUpperCase() })
                   }
-                  className="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-red-500"
+                  className="w-full bg-white border border-gray-300 rounded px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
                 />
               </div>
 
@@ -418,7 +489,7 @@ export default function Pagamento() {
                     }
                     min="1"
                     max="12"
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-red-500"
+                    className="w-full bg-white border border-gray-300 rounded px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
                   />
                 </div>
 
@@ -437,7 +508,7 @@ export default function Pagamento() {
                       })
                     }
                     min={new Date().getFullYear() % 100}
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-red-500"
+                    className="w-full bg-white border border-gray-300 rounded px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
                   />
                 </div>
 
@@ -456,7 +527,7 @@ export default function Pagamento() {
                       })
                     }
                     maxLength="4"
-                    className="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-red-500"
+                    className="w-full bg-white border border-gray-300 rounded px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
                   />
                 </div>
               </div>
@@ -485,11 +556,11 @@ export default function Pagamento() {
                       placeholder="Seu nome"
                       value={titularPix}
                       onChange={(e) => setTitularPix(e.target.value)}
-                      className="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-red-500"
+                      className="w-full bg-white border border-gray-300 rounded px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
                     />
                   </div>
 
-                  <div className="bg-gray-700 bg-opacity-50 border border-gray-600 rounded p-4 text-sm text-gray-300">
+                  <div className="bg-blue-50 border border-blue-200 rounded p-4 text-sm text-gray-700">
                     <p className="mb-2">
                       Ao clicar em "Gerar código PIX", você receberá um código único para copiar e colar em seu aplicativo bancário.
                     </p>
@@ -506,9 +577,9 @@ export default function Pagamento() {
                 </>
               ) : (
                 <>
-                  <div className="bg-gray-700 p-6 rounded-lg text-center border-2 border-green-500">
-                    <p className="text-sm text-gray-400 mb-4">Seu código PIX:</p>
-                    <p className="text-2xl font-mono font-bold mb-4 break-all">
+                  <div className="bg-gray-50 p-6 rounded-lg text-center border-2 border-green-500">
+                    <p className="text-sm text-gray-600 mb-4">Seu código PIX:</p>
+                    <p className="text-2xl font-mono font-bold mb-4 break-all text-gray-800">
                       {pixCode}
                     </p>
                     <button
@@ -517,14 +588,14 @@ export default function Pagamento() {
                       className={`w-full py-2 rounded-lg font-semibold transition ${
                         copiado
                           ? 'bg-green-600 text-white'
-                          : 'bg-gray-600 hover:bg-gray-500 text-white'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
                       }`}
                     >
                       {copiado ? '✓ Copiado!' : 'Copiar Código'}
                     </button>
                   </div>
 
-                  <div className="bg-blue-900 border border-blue-700 text-blue-200 p-4 rounded-lg text-sm">
+                  <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg text-sm">
                     <p>
                       ⏱️ Processando pagamento... Seus ingressos serão salvos em breve!
                     </p>
@@ -534,7 +605,7 @@ export default function Pagamento() {
             </form>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }

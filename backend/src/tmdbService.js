@@ -128,30 +128,48 @@ class TMDBService {
 
   async getMovieDetails(tmdbId) {
     try {
-      let response = await this.client.get(`/movie/${tmdbId}`, {
+      let response = await this.requestWithRetry(() => this.client.get(`/movie/${tmdbId}`, {
         params: {
           append_to_response: 'credits,videos,images',
           language: 'pt-BR'
         }
-      });
-      
+      }));
+
       if (!response.data.title || !response.data.overview) {
-        const englishResponse = await this.client.get(`/movie/${tmdbId}`, {
+        const englishResponse = await this.requestWithRetry(() => this.client.get(`/movie/${tmdbId}`, {
           params: {
             append_to_response: 'credits,videos,images',
             language: 'en-US'
           }
-        });
-        
+        }));
+
         response.data.title = response.data.title || englishResponse.data.title;
         response.data.overview = response.data.overview || englishResponse.data.overview;
         response.data.genres = response.data.genres || englishResponse.data.genres;
       }
-      
+
       return response.data;
     } catch (error) {
       console.error('Erro ao buscar detalhes do filme:', error.response?.data || error.message);
       throw new Error('Falha ao buscar detalhes do filme');
+    }
+  }
+
+  async requestWithRetry(requestFn, retries = 3, delayMs = 750) {
+    try {
+      return await requestFn();
+    } catch (error) {
+      const transientCodes = ['ECONNRESET', 'ETIMEDOUT', 'EAI_AGAIN', 'ENOTFOUND', 'ECONNABORTED'];
+      const message = error.message || '';
+      const isTransient = transientCodes.includes(error.code) || transientCodes.some((code) => message.includes(code)) || message.includes('timeout');
+
+      if (retries > 0 && isTransient) {
+        const backoff = delayMs * (4 - retries);
+        await new Promise((resolve) => setTimeout(resolve, Math.max(backoff, delayMs)));
+        return this.requestWithRetry(requestFn, retries - 1, Math.min(delayMs * 2, 4000));
+      }
+
+      throw error;
     }
   }
 
