@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../contexts/AuthContext';
 import LocationSelector from "../../components/LocationSelector";
@@ -31,6 +31,19 @@ export default function TeatroPage() {
   const [selecionados, setSelecionados] = useState(new Map());
   const [movieTitle, setMovieTitle] = useState('');
   const [sessionTime, setSessionTime] = useState('');
+  const [eventMeta, setEventMeta] = useState({});
+
+  const resolvedTitle = useMemo(() => {
+    if (eventMeta.name) return eventMeta.name;
+    return movieTitle || 'Evento';
+  }, [eventMeta.name, movieTitle]);
+
+  const resolvedTime = useMemo(() => {
+    if (eventMeta.date && eventMeta.time) {
+      return `${eventMeta.date.split('-').reverse().join('/') || eventMeta.date} — ${eventMeta.time}`;
+    }
+    return sessionTime;
+  }, [eventMeta.date, eventMeta.time, sessionTime]);
 
   useEffect(() => {
     const { movieId } = router.query;
@@ -67,7 +80,37 @@ export default function TeatroPage() {
     })();
   }, [router.query]);
 
-  function toggleArea(area) {
+  useEffect(() => {
+    if (!router.isReady) return;
+    const {
+      eventName,
+      eventCategory,
+      eventDate,
+      eventTime,
+      basePrice
+    } = router.query;
+
+    setEventMeta({
+      name: eventName,
+      category: eventCategory,
+      date: eventDate,
+      time: eventTime,
+      basePrice: basePrice ? Number(basePrice) : null
+    });
+  }, [router.isReady, router.query]);
+
+  const pricingForArea = (area) => {
+    if (eventMeta.basePrice) {
+      return {
+        ...area,
+        precoBase: eventMeta.basePrice
+      };
+    }
+    return area;
+  };
+
+  function toggleArea(areaDef) {
+    const area = pricingForArea(areaDef);
     setSelecionados(prev => {
       const novo = new Map(prev);
       if (novo.has(area.nome)) novo.delete(area.nome); else novo.set(area.nome, { area, tipo: 'inteira', qtd: 1 });
@@ -209,7 +252,7 @@ export default function TeatroPage() {
         <main className="bg-gradient-to-br from-gray-50 to-gray-100 text-gray-900 flex gap-6">
           {/* Mapa Visual do Teatro */}
           <div className="flex-1 bg-white rounded-2xl p-6 flex flex-col items-center shadow-xl">
-            <h2 className="text-xl font-bold mb-2 text-center">{movieTitle || 'Selecionando Evento'}{sessionTime ? ` — ${sessionTime}` : ''}</h2>
+            <h2 className="text-xl font-bold mb-2 text-center">{resolvedTitle}{resolvedTime ? ` — ${resolvedTime}` : ''}</h2>
             <h3 className="text-sm text-gray-600 mb-4">Visual do Teatro</h3>
 
             <div className="w-full max-w-2xl space-y-4">
@@ -256,11 +299,12 @@ export default function TeatroPage() {
             <div className="grid grid-cols-1 gap-4">
               {areas.map((area) => {
                 const ativo = selecionados.has(area.nome);
+                const areaWithPrice = pricingForArea(area);
                 return (
-                  <button key={area.nome} onClick={() => toggleArea(area)} className={`${area.cor} rounded-xl p-4 text-left transition-all duration-300 shadow-lg ${ativo ? 'ring-4 ring-white ring-opacity-70 transform scale-105' : 'hover:opacity-90 hover:transform hover:scale-102'}`}>
+                  <button key={area.nome} onClick={() => toggleArea(areaWithPrice)} className={`${area.cor} rounded-xl p-4 text-left transition-all duration-300 shadow-lg ${ativo ? 'ring-4 ring-white ring-opacity-70 transform scale-105' : 'hover:opacity-90 hover:transform hover:scale-102'}`}>
                     <div className="font-bold text-lg">{area.nome}</div>
                     <div className="text-sm opacity-90">{area.descricao}</div>
-                    <div className="font-semibold mt-2 text-lg">R$ {area.precoBase.toFixed(2)}</div>
+                    <div className="font-semibold mt-2 text-lg">R$ {areaWithPrice.precoBase.toFixed(2)}</div>
                     {ativo && <div className="text-xs mt-1 bg-black bg-opacity-20 px-2 py-1 rounded">Selecionada</div>}
                   </button>
                 );

@@ -4,6 +4,29 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
 
+const SEAT_LAYOUT_RULES = [
+  {
+    preset: 'teatro',
+    layout: '4',
+    regex: /(teatr|ópera|opera|ballet|musical)/i,
+  },
+  {
+    preset: 'show',
+    layout: '4',
+    regex: /(show|músic|music|concert|concerto|festival|tour|turnê|rock|metal|indie|pop|eletr[oô]n|eletron|hip[- ]?hop|rap|sertanej|pagode|samba|forr[oó]|ax[eé]|mpb|jazz|blues|funk)/i,
+  },
+  {
+    preset: 'standup',
+    layout: '4',
+    regex: /(stand[ -]?up|com[eé]dia|humor)/i,
+  }
+];
+
+const getSeatConfigForCategory = (category = '') => {
+  const normalized = category?.toString().toLowerCase() || '';
+  return SEAT_LAYOUT_RULES.find((rule) => rule.regex.test(normalized)) || null;
+};
+
 export default function Eventos() {
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -87,6 +110,44 @@ export default function Eventos() {
     } catch (error) {
       console.error('Erro ao preparar compra:', error);
       alert(error.message || 'Erro ao preparar compra. Tente novamente.');
+    } finally {
+      setProcessingPurchase(false);
+    }
+  };
+
+  const handleSelectSeats = async () => {
+    if (!modalEvent || processingPurchase) return;
+    const seatConfig = getSeatConfigForCategory(modalEvent.category || modalEvent.name);
+    if (!seatConfig) {
+      await handleProceedToPayment();
+      return;
+    }
+
+    setProcessingPurchase(true);
+
+    try {
+      const localEventId = await ensureLocalEventId(modalEvent);
+
+      if (!localEventId) {
+        alert('Não foi possível preparar o evento para selecionar os lugares.');
+        return;
+      }
+
+      const query = {
+        eventId: localEventId,
+        eventName: modalEvent.name,
+        eventCategory: modalEvent.category || 'Evento',
+        eventDate: modalEvent.date,
+        eventTime: modalEvent.time,
+        seatPreset: seatConfig.preset,
+        basePrice: modalEvent.price || '',
+      };
+
+      setModalEvent(null);
+      router.push({ pathname: `/assentos/[id]${seatConfig.layout}`, query });
+    } catch (error) {
+      console.error('Erro ao redirecionar para seleção de assentos:', error);
+      alert(error.message || 'Erro ao abrir seleção de assentos. Tente novamente.');
     } finally {
       setProcessingPurchase(false);
     }
@@ -587,41 +648,58 @@ export default function Eventos() {
                   </>
                 ) : (
                   <>
-                    <h4 className="text-xl font-semibold mb-4">Comprar ingresso</h4>
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="flex items-center border rounded-md px-2 py-1">
-                        <button 
-                          onClick={() => setTicketCount(Math.max(1, ticketCount - 1))} 
-                          className="px-3 py-1 hover:bg-gray-100 rounded transition-colors"
+                    {getSeatConfigForCategory(modalEvent.category || modalEvent.name) ? (
+                      <>
+                        <div className="p-4 mb-4 rounded-lg bg-blue-50 border border-blue-200 text-sm text-blue-800">
+                          Selecione seus lugares na próxima etapa antes de seguir para o pagamento.
+                        </div>
+                        <button
+                          onClick={handleSelectSeats}
+                          disabled={processingPurchase}
+                          className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                          -
+                          {processingPurchase ? 'Carregando...' : 'Selecionar lugares'}
                         </button>
-                        <div className="px-4 font-bold">{ticketCount}</div>
-                        <button 
-                          onClick={() => setTicketCount(Math.min(10, ticketCount + 1))} 
-                          className="px-3 py-1 hover:bg-gray-100 rounded transition-colors"
+                      </>
+                    ) : (
+                      <>
+                        <h4 className="text-xl font-semibold mb-4">Comprar ingresso</h4>
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="flex items-center border rounded-md px-2 py-1">
+                            <button 
+                              onClick={() => setTicketCount(Math.max(1, ticketCount - 1))} 
+                              className="px-3 py-1 hover:bg-gray-100 rounded transition-colors"
+                            >
+                              -
+                            </button>
+                            <div className="px-4 font-bold">{ticketCount}</div>
+                            <button 
+                              onClick={() => setTicketCount(Math.min(10, ticketCount + 1))} 
+                              className="px-3 py-1 hover:bg-gray-100 rounded transition-colors"
+                            >
+                              +
+                            </button>
+                          </div>
+                          {modalEvent.price > 0 && (
+                            <>
+                              <div className="text-sm text-gray-700">
+                                Preço por ingresso: <span className="font-semibold text-blue-600">R$ {modalEvent.price.toFixed(2)}</span>
+                              </div>
+                              <div className="ml-auto text-sm font-bold">
+                                Total: <span className="text-green-600">R$ {(modalEvent.price * ticketCount).toFixed(2)}</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        <button
+                          onClick={handleProceedToPayment}
+                          disabled={processingPurchase}
+                          className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                          +
+                          {processingPurchase ? 'Carregando...' : 'Ir para pagamento'}
                         </button>
-                      </div>
-                      {modalEvent.price > 0 && (
-                        <>
-                          <div className="text-sm text-gray-700">
-                            Preço por ingresso: <span className="font-semibold text-blue-600">R$ {modalEvent.price.toFixed(2)}</span>
-                          </div>
-                          <div className="ml-auto text-sm font-bold">
-                            Total: <span className="text-green-600">R$ {(modalEvent.price * ticketCount).toFixed(2)}</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    <button
-                      onClick={handleProceedToPayment}
-                      disabled={processingPurchase}
-                      className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      {processingPurchase ? 'Carregando...' : 'Ir para pagamento'}
-                    </button>
+                      </>
+                    )}
                   </>
                 )}
               </div>
