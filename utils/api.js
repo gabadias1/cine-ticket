@@ -25,7 +25,7 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const error = new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
@@ -41,7 +41,11 @@ class ApiService {
       return await response.json();
     } catch (error) {
       // Só logar se não for um 404 (que pode ser esperado)
-      if (!error.message?.includes('404') && !error.message?.includes('Not Found')) {
+      const isNotFound = error.message?.includes('404') ||
+        error.message?.includes('Not Found') ||
+        error.message?.includes('not found');
+
+      if (!isNotFound) {
         console.error('API Error:', error);
       }
       throw error;

@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
-import LocationSelector from '../components/LocationSelector';
+import Layout from '../components/Layout';
+import Button from '../components/ui/Button';
+import { Ticket, Calendar, Clock, MapPin, LogOut, Film, Music } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Perfil() {
   const router = useRouter();
@@ -21,22 +24,22 @@ export default function Perfil() {
 
     const { tab } = router.query;
     if (tab) setAbaSelecionada(tab);
-    
+
     carregarIngressos();
   }, [user, router.query]);
 
   const carregarIngressos = async () => {
     if (!user) return;
-    
+
     setCarregando(true);
     setErro('');
-    
+
     try {
       const [ticketsData, eventTicketsData] = await Promise.all([
         api.getUserTickets(user.id),
         api.getUserEventTickets(user.id)
       ]);
-      
+
       setIngressos(ticketsData || []);
       setIngressosEventos(eventTicketsData || []);
     } catch (erro) {
@@ -65,286 +68,207 @@ export default function Perfil() {
     });
   };
 
-  return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 py-4 px-6 shadow-sm">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-8">
-            <button onClick={() => router.push("/")} className="flex items-center space-x-3 h-10">
-              <img src="/images/logo.png" alt="CineTicket" className="h-full w-auto object-contain" />
-            </button>
-            
-            {/* Location Selector */}
-            <LocationSelector />
-            
-            <nav className="hidden lg:flex space-x-8">
-              <button
-                onClick={() => router.push("/filmes")}
-                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-              >
-                Filmes
-              </button>
-              <button
-                onClick={() => router.push("/eventos")}
-                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-              >
-                Eventos
-              </button>
-            </nav>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <button
-              className="p-2 text-gray-600 hover:text-blue-600 transition-colors"
-              onClick={() => router.push({ pathname: '/filmes', query: { focusSearch: '1' } })}
-              type="button"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-              </svg>
-            </button>
-            {user ? (
-              <div className="flex items-center space-x-3">
-                <span className="text-gray-700 hidden sm:inline text-sm font-medium">Olá, {user.name}</span>
-                <button
-                  onClick={() => router.push("/perfil")}
-                  className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
-                  title="Meu Perfil"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span>Perfil</span>
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
-                  title="Sair"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  <span>Sair</span>
-                </button>
-              </div>
+  const TicketCard = ({ type, data }) => {
+    const isMovie = type === 'movie';
+    const title = isMovie ? data.session?.movie?.title : data.event?.title;
+    const date = isMovie ? data.session?.startsAt : data.event?.date;
+    const price = data.price;
+    const seat = isMovie ? `${data.seat?.row}-${data.seat?.number}` : data.ticketType;
+    const image = isMovie
+      ? (data.session?.movie?.posterPath || data.session?.movie?.imageUrl)
+      : (data.event?.imageUrl || data.event?.bannerUrl);
+
+    // Fix image URL if needed
+    const imageUrl = image?.startsWith('http')
+      ? image
+      : image ? `https://image.tmdb.org/t/p/w500${image.startsWith('/') ? image : '/' + image}` : null;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-surface border border-white/10 rounded-2xl overflow-hidden hover:border-primary/50 transition-colors group"
+      >
+        <div className="flex flex-col md:flex-row">
+          {/* Image Section */}
+          <div className="w-full md:w-48 h-48 md:h-auto relative">
+            {imageUrl ? (
+              <img src={imageUrl} alt={title} className="w-full h-full object-cover" />
             ) : (
-              <button
-                onClick={() => router.push("/login")}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors font-medium"
-              >
-                Entrar
-              </button>
+              <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                {isMovie ? <Film className="w-12 h-12 text-gray-600" /> : <Music className="w-12 h-12 text-gray-600" />}
+              </div>
             )}
+            <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent md:bg-gradient-to-r" />
+          </div>
+
+          {/* Content Section */}
+          <div className="p-6 flex-grow flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <span className={`text-xs font-bold px-2 py-1 rounded-lg mb-2 inline-block ${isMovie ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'}`}>
+                    {isMovie ? 'CINEMA' : 'EVENTO'}
+                  </span>
+                  <h3 className="text-xl font-bold text-white mb-1">{title || 'Título Indisponível'}</h3>
+                </div>
+                <div className={`px-3 py-1 rounded-full text-xs font-bold border ${data.status === 'ACTIVE'
+                    ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                    : 'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                  }`}>
+                  {data.status === 'ACTIVE' ? 'ATIVO' : data.status}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm text-gray-400">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-primary" />
+                  <span>{date ? new Date(date).toLocaleDateString('pt-BR') : 'Data N/A'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-primary" />
+                  <span>{date ? new Date(date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'Hora N/A'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Ticket className="w-4 h-4 text-primary" />
+                  <span>{seat || 'Assento N/A'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-white/5 flex justify-between items-center">
+              <div className="text-xs text-gray-500">
+                Comprado em {formatarData(data.createdAt)}
+              </div>
+              <div className="text-xl font-bold text-white">
+                R$ {price?.toFixed(2) || '0.00'}
+              </div>
+            </div>
           </div>
         </div>
-      </header>
+      </motion.div>
+    );
+  };
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        {/* Título */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2 text-gray-800">👤 Meu Perfil</h1>
-          <p className="text-gray-600">Visualize e gerencie seus ingressos</p>
+  return (
+    <Layout title="Meu Perfil - CineTicket">
+      <div className="pt-24 pb-12 px-6 max-w-6xl mx-auto min-h-screen">
+
+        {/* Profile Header */}
+        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+          <div className="flex items-center gap-6">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-3xl font-bold text-white shadow-lg shadow-primary/20">
+              {user?.name?.charAt(0).toUpperCase() || 'U'}
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-1">Olá, {user?.name}</h1>
+              <p className="text-gray-400">{user?.email}</p>
+            </div>
+          </div>
+
+          <Button
+            variant="ghost"
+            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+            onClick={handleLogout}
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sair da conta
+          </Button>
         </div>
 
-        {/* Abas */}
-        <div className="flex gap-4 mb-8 border-b border-gray-200">
+        {/* Tabs */}
+        <div className="flex gap-4 mb-8 border-b border-white/10">
           <button
             onClick={() => setAbaSelecionada('ingressos')}
-            className={`pb-4 font-semibold transition ${
-              abaSelecionada === 'ingressos'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
+            className={`pb-4 px-4 font-medium transition-all relative ${abaSelecionada === 'ingressos'
+                ? 'text-primary'
+                : 'text-gray-400 hover:text-white'
+              }`}
           >
-            🎫 Ingressos de Cinema ({ingressos.length})
+            Ingressos de Cinema
+            <span className="ml-2 text-xs bg-white/10 px-2 py-0.5 rounded-full">{ingressos.length}</span>
+            {abaSelecionada === 'ingressos' && (
+              <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
           </button>
           <button
             onClick={() => setAbaSelecionada('eventos')}
-            className={`pb-4 font-semibold transition ${
-              abaSelecionada === 'eventos'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-800'
-            }`}
+            className={`pb-4 px-4 font-medium transition-all relative ${abaSelecionada === 'eventos'
+                ? 'text-primary'
+                : 'text-gray-400 hover:text-white'
+              }`}
           >
-            🎭 Ingressos de Eventos ({ingressosEventos.length})
+            Ingressos de Eventos
+            <span className="ml-2 text-xs bg-white/10 px-2 py-0.5 rounded-full">{ingressosEventos.length}</span>
+            {abaSelecionada === 'eventos' && (
+              <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary" />
+            )}
           </button>
         </div>
 
-        {/* Mensagens */}
-        {erro && (
-          <div className="bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-lg mb-8">
-            {erro}
-          </div>
-        )}
+        {/* Error Message */}
+        <AnimatePresence>
+          {erro && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-red-500/10 border border-red-500/50 text-red-200 px-6 py-4 rounded-xl mb-8"
+            >
+              {erro}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Conteúdo */}
-        <div className="bg-white rounded-lg p-8 border border-gray-200 shadow-md">
+        {/* Content */}
+        <div className="space-y-6">
           {carregando ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-              <p className="text-gray-600">Carregando ingressos...</p>
-            </div>
-          ) : abaSelecionada === 'ingressos' ? (
-            <div>
-              {ingressos.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-4xl mb-4">🎬</p>
-                  <p className="text-gray-600 mb-6">Você ainda não comprou ingressos de cinema</p>
-                  <button
-                    onClick={() => router.push('/filmes')}
-                    className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-semibold transition text-white"
-                  >
-                    Ir para Filmes
-                  </button>
-                </div>
-              ) : (
-                <div className="grid gap-4">
-                  {ingressos.map((ingresso) => (
-                    <div
-                      key={ingresso.id}
-                      className="bg-gray-50 border border-gray-200 rounded-lg p-6 hover:border-blue-500 transition shadow-sm"
-                    >
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div>
-                          <p className="text-sm text-gray-600 mb-1">Filme</p>
-                          <p className="font-bold text-lg text-gray-800">
-                            {ingresso.session?.movie?.title || 'Filme não disponível'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600 mb-1">Sessão</p>
-                          <p className="font-semibold text-gray-800">
-                            {ingresso.session?.startsAt 
-                              ? new Date(ingresso.session.startsAt).toLocaleDateString('pt-BR', {
-                                  year: 'numeric',
-                                  month: '2-digit',
-                                  day: '2-digit'
-                                })
-                              : 'Data não definida'}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {ingresso.session?.startsAt
-                              ? new Date(ingresso.session.startsAt).toLocaleTimeString('pt-BR', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  hour12: false
-                                })
-                              : ''}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600 mb-1">Assento</p>
-                          <p className="font-bold text-lg text-gray-800">
-                            {ingresso.seat?.row}-{ingresso.seat?.number || 'Não definido'}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            Preço: R$ {ingresso.price?.toFixed(2) || '0.00'}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="bg-blue-50 rounded p-3 mb-4 border border-blue-100">
-                        <p className="text-xs text-gray-600 mb-1">Status</p>
-                        <div className="flex items-center gap-2">
-                          <span className={`inline-block w-2 h-2 rounded-full ${
-                            ingresso.status === 'ACTIVE' ? 'bg-green-500' : 'bg-gray-400'
-                          }`}></span>
-                          <p className="font-semibold text-gray-800">
-                            {ingresso.status === 'ACTIVE' ? '✓ Ativo' : ingresso.status}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="text-xs text-gray-500">
-                        Comprado em: {formatarData(ingresso.createdAt)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-48 bg-white/5 rounded-2xl animate-pulse" />
+              ))}
             </div>
           ) : (
-            <div>
-              {ingressosEventos.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-4xl mb-4">🎭</p>
-                  <p className="text-gray-600 mb-6">Você ainda não comprou ingressos de eventos</p>
-                  <button
-                    onClick={() => router.push('/eventos')}
-                    className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg font-semibold transition text-white"
-                  >
-                    Ir para Eventos
-                  </button>
-                </div>
-              ) : (
-                <div className="grid gap-4">
-                  {ingressosEventos.map((ingresso) => (
-                    <div
-                      key={ingresso.id}
-                      className="bg-gray-50 border border-gray-200 rounded-lg p-6 hover:border-blue-500 transition shadow-sm"
-                    >
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div>
-                          <p className="text-sm text-gray-600 mb-1">Evento</p>
-                          <p className="font-bold text-lg text-gray-800">
-                            {ingresso.event?.title || 'Evento não disponível'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600 mb-1">Data</p>
-                          <p className="font-semibold text-gray-800">
-                            {ingresso.event?.date
-                              ? new Date(ingresso.event.date).toLocaleDateString('pt-BR', {
-                                  year: 'numeric',
-                                  month: '2-digit',
-                                  day: '2-digit'
-                                })
-                              : 'Data não definida'}
-                          </p>
-                          <p className="text-sm text-gray-600">
-                            {ingresso.event?.date
-                              ? new Date(ingresso.event.date).toLocaleTimeString('pt-BR', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  hour12: false
-                                })
-                              : ''}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600 mb-1">Ingresso</p>
-                          <p className="font-bold text-lg text-gray-800">{ingresso.ticketType}</p>
-                          <p className="text-sm text-gray-600">
-                            Preço: R$ {ingresso.price?.toFixed(2) || '0.00'}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="text-xs text-gray-500">
-                        Comprado em: {formatarData(ingresso.createdAt)}
-                      </div>
+            <>
+              {abaSelecionada === 'ingressos' ? (
+                ingressos.length === 0 ? (
+                  <div className="text-center py-20 bg-white/5 rounded-2xl border border-white/10">
+                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Film className="w-10 h-10 text-gray-500" />
                     </div>
-                  ))}
-                </div>
+                    <h3 className="text-xl font-bold text-white mb-2">Nenhum ingresso encontrado</h3>
+                    <p className="text-gray-400 mb-6">Você ainda não comprou ingressos de cinema.</p>
+                    <Button onClick={() => router.push('/filmes')}>
+                      Explorar Filmes
+                    </Button>
+                  </div>
+                ) : (
+                  ingressos.map((ingresso) => (
+                    <TicketCard key={ingresso.id} type="movie" data={ingresso} />
+                  ))
+                )
+              ) : (
+                ingressosEventos.length === 0 ? (
+                  <div className="text-center py-20 bg-white/5 rounded-2xl border border-white/10">
+                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Music className="w-10 h-10 text-gray-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">Nenhum evento encontrado</h3>
+                    <p className="text-gray-400 mb-6">Você ainda não comprou ingressos para eventos.</p>
+                    <Button onClick={() => router.push('/eventos')}>
+                      Explorar Eventos
+                    </Button>
+                  </div>
+                ) : (
+                  ingressosEventos.map((ingresso) => (
+                    <TicketCard key={ingresso.id} type="event" data={ingresso} />
+                  ))
+                )
               )}
-            </div>
+            </>
           )}
         </div>
-
-        {/* Botão para voltar */}
-        <div className="mt-8">
-          <button
-            onClick={() => router.push('/')}
-            className="text-gray-600 hover:text-blue-600 transition flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-            </svg>
-            Voltar para home
-          </button>
-        </div>
-      </main>
-    </div>
+      </div>
+    </Layout>
   );
 }

@@ -1,12 +1,39 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
-import LocationSelector from "../components/LocationSelector";
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
+import Layout from '../components/Layout';
+import EventCard from '../components/events/EventCard';
+import Button from '../components/ui/Button';
+import { Search, Filter, X, Calendar, MapPin } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const SEAT_LAYOUT_RULES = [
+  {
+    preset: 'teatro',
+    layout: '4',
+    regex: /(teatr|ópera|opera|ballet|musical)/i,
+  },
+  {
+    preset: 'show',
+    layout: '4',
+    regex: /(show|músic|music|concert|concerto|festival|tour|turnê|rock|metal|indie|pop|eletr[oô]n|eletron|hip[- ]?hop|rap|sertanej|pagode|samba|forr[oó]|ax[eé]|mpb|jazz|blues|funk)/i,
+  },
+  {
+    preset: 'standup',
+    layout: '4',
+    regex: /(stand[ -]?up|com[eé]dia|humor)/i,
+  }
+];
+
+const getSeatConfigForCategory = (category = '') => {
+  const normalized = category?.toString().toLowerCase() || '';
+  return SEAT_LAYOUT_RULES.find((rule) => rule.regex.test(normalized)) || null;
+};
 
 export default function Eventos() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   // Estados para eventos
   const [localEvents, setLocalEvents] = useState([]);
@@ -87,6 +114,45 @@ export default function Eventos() {
     } catch (error) {
       console.error('Erro ao preparar compra:', error);
       alert(error.message || 'Erro ao preparar compra. Tente novamente.');
+    } finally {
+      setProcessingPurchase(false);
+    }
+  };
+
+  const handleSelectSeats = async () => {
+    if (!modalEvent || processingPurchase) return;
+    const seatConfig = getSeatConfigForCategory(modalEvent.category || modalEvent.name);
+    if (!seatConfig) {
+      await handleProceedToPayment();
+      return;
+    }
+
+    setProcessingPurchase(true);
+
+    try {
+      const localEventId = await ensureLocalEventId(modalEvent);
+
+      if (!localEventId) {
+        alert('Não foi possível preparar o evento para selecionar os lugares.');
+        return;
+      }
+
+      const query = {
+        eventId: localEventId,
+        eventName: modalEvent.name,
+        eventCategory: modalEvent.category || 'Evento',
+        eventDate: modalEvent.date,
+        eventTime: modalEvent.time,
+        seatPreset: seatConfig.preset,
+        basePrice: modalEvent.price || '',
+        layout: seatConfig.layout
+      };
+
+      setModalEvent(null);
+      router.push({ pathname: `/assentos/${localEventId}`, query });
+    } catch (error) {
+      console.error('Erro ao redirecionar para seleção de assentos:', error);
+      alert(error.message || 'Erro ao abrir seleção de assentos. Tente novamente.');
     } finally {
       setProcessingPurchase(false);
     }
@@ -212,9 +278,14 @@ export default function Eventos() {
     ].filter(Boolean);
     const priceRange = event.priceRanges?.[0];
     const matchingLocal = localEvents.find((e) => e.ticketmasterId === event.id);
-    const price = typeof priceRange?.min === 'number'
+    const price = (priceRange?.min && priceRange.min > 0)
       ? priceRange.min
-      : (typeof priceRange?.max === 'number' ? priceRange.max : 0);
+      : ((priceRange?.max && priceRange.max > 0) ? priceRange.max : 80.00); // Fallback price for demo
+
+    let category = event.classifications?.[0]?.genre?.name || event.classifications?.[0]?.segment?.name || 'Evento';
+    if (category === 'Undefined' || category === 'Indefinido') {
+      category = event.classifications?.[0]?.segment?.name || 'Evento';
+    }
 
     return {
       id: `ticketmaster-${event.id}`,
@@ -223,7 +294,7 @@ export default function Eventos() {
       description: (event.info || event.pleaseNote || '').replace(/<[^>]*>/g, '').trim().substring(0, 200),
       image: event.images?.find((img) => img.ratio === '16_9' && img.width >= 1024)?.url || event.images?.[0]?.url || '/images/logo.png',
       city: venue.city?.name || '',
-      category: event.classifications?.[0]?.genre?.name || event.classifications?.[0]?.segment?.name || 'Evento',
+      category,
       location: venue.name || venue.address?.line1 || 'Local a definir',
       date: parsedDate.toISOString().split('T')[0],
       time: parsedDate.toTimeString().split(' ')[0].substring(0, 5),
@@ -291,7 +362,7 @@ export default function Eventos() {
   // Sincronizar evento do Ticketmaster para o banco local
   const handleSyncEvent = async (ticketmasterId) => {
     if (!ticketmasterId) return;
-    
+
     setSyncingEvent(ticketmasterId);
     try {
       await api.syncTicketmasterEvent(ticketmasterId);
@@ -307,207 +378,125 @@ export default function Eventos() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 py-4 px-6 shadow-sm">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-8">
-            <button onClick={() => router.push("/")} className="flex items-center space-x-3 h-10">
-              <img src="/images/logo.png" alt="CineTicket" className="h-full w-auto object-contain" />
-            </button>
-            
-            {/* Location Selector */}
-            <LocationSelector />
-            
-            <nav className="hidden lg:flex space-x-8">
-              <button
-                onClick={() => router.push("/filmes")}
-                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-              >
-                Filmes
-              </button>
-              <button
-                onClick={() => router.push("/eventos")}
-                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-              >
-                Eventos
-              </button>
-            </nav>
+    <Layout title="Eventos - CineTicket">
+      <div className="pt-24 pb-12 px-6 max-w-7xl mx-auto min-h-screen">
+
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-2">Eventos e Shows</h1>
+            <p className="text-gray-400">Garanta seu lugar nos melhores espetáculos</p>
           </div>
-          
-          <div className="flex items-center space-x-4">
-            <button
-              className="p-2 text-gray-600 hover:text-blue-600 transition-colors"
-              onClick={() => {
-                if (searchInputRef.current) {
-                  searchInputRef.current.focus();
-                  searchInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-              }}
-              type="button"
-              aria-label="Buscar eventos"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-              </svg>
-            </button>
-            {user ? (
-              <div className="flex items-center space-x-3">
-                <span className="text-gray-700 hidden sm:inline text-sm font-medium">Olá, {user.name}</span>
-                <button
-                  onClick={() => router.push("/perfil")}
-                  className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
-                  title="Meu Perfil"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span>Perfil</span>
-                </button>
-                <button
-                  onClick={logout}
-                  className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
-                  title="Sair"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  <span>Sair</span>
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => router.push("/login")}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors font-medium"
-              >
-                Entrar
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-800">Todos os Eventos</h2>
-        </div>
+          {/* Search & Filter Bar */}
+          <div className="w-full md:w-auto flex flex-col sm:flex-row gap-4 bg-white/5 p-2 rounded-2xl border border-white/10 backdrop-blur-sm">
+            <form onSubmit={(e) => e.preventDefault()} className="relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Buscar eventos..."
+                className="w-full sm:w-64 bg-transparent border-none text-white placeholder-gray-500 focus:ring-0 pl-10 py-2.5"
+              />
+            </form>
 
-        {/* Mensagem de erro */}
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
-          </div>
-        )}
+            <div className="h-px sm:h-auto sm:w-px bg-white/10" />
 
-        {/* Loading state */}
-        {loading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-gray-600">Carregando eventos...</p>
-          </div>
-        )}
-
-        {/* Busca e Filtros */}
-        {!loading && (
-          <>
-            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-              <div className="flex flex-col md:flex-row gap-4 mb-6">
-                <div className="flex-1">
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Buscar eventos..."
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
+            <div className="flex gap-2 flex-wrap">
+              {/* City Filter */}
+              <div className="relative">
                 <select
                   value={filterCity}
                   onChange={(e) => setFilterCity(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="appearance-none bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-primary transition-colors cursor-pointer w-full sm:w-40"
                 >
-                  <option value="">Todas as cidades</option>
+                  <option value="" className="bg-gray-900">Cidades</option>
                   {cities.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={c} value={c} className="bg-gray-900">{c}</option>
                   ))}
                 </select>
+                <MapPin className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
 
+              {/* Category Filter */}
+              <div className="relative">
                 <select
                   value={filterCategory}
                   onChange={(e) => setFilterCategory(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="appearance-none bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-primary transition-colors cursor-pointer w-full sm:w-40"
                 >
-                  <option value="">Todas as categorias</option>
+                  <option value="" className="bg-gray-900">Categorias</option>
                   {categories.map((c) => (
-                    <option key={c} value={c}>{c}</option>
+                    <option key={c} value={c} className="bg-gray-900">{c}</option>
                   ))}
                 </select>
+                <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
 
+              {/* Date Filter */}
+              <div className="relative">
                 <input
                   type="date"
                   value={filterDate}
                   onChange={(e) => setFilterDate(e.target.value)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="appearance-none bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl px-4 py-2.5 focus:outline-none focus:border-primary transition-colors cursor-pointer w-full sm:w-auto"
                 />
+              </div>
 
+              {(searchQuery || filterCity || filterCategory || filterDate) && (
                 <button
                   onClick={() => { setSearchQuery(''); setFilterCity(''); setFilterCategory(''); setFilterDate(''); }}
-                  className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                  className="p-2.5 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-colors"
+                  title="Limpar Filtros"
                 >
-                  Limpar Filtros
+                  <X className="w-5 h-5" />
                 </button>
-              </div>
+              )}
             </div>
+          </div>
+        </div>
 
-            {/* Lista de eventos / estado vazio */}
+        {/* Error Message */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-red-500/10 border border-red-500/50 text-red-200 px-6 py-4 rounded-xl mb-8 flex items-center justify-between"
+            >
+              <span>{error}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Loading State */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="aspect-[16/9] bg-white/5 rounded-2xl animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <>
             {filteredEvents.length === 0 ? (
-              <div className="bg-white rounded-lg shadow p-8 text-center text-gray-600">
-                Nenhum evento encontrado
+              <div className="col-span-full py-20 text-center">
+                <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="w-10 h-10 text-gray-500" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Nenhum evento encontrado</h3>
+                <p className="text-gray-400">Tente ajustar seus filtros ou buscar por outro termo.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredEvents.map((ev) => (
-                  <div key={ev.id} className="bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl group relative">
-                    {ev.source === 'ticketmaster' && (
-                      <div className="absolute top-2 right-2 z-10">
-                        <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded">
-                          Ticketmaster
-                        </span>
-                      </div>
-                    )}
-                    <div className="aspect-w-16 aspect-h-9">
-                      <img
-                        src={ev.image}
-                        alt={ev.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/600x338?text=Evento'; }}
-                      />
-                    </div>
-                    <div className="p-4">
-                      <h3 className="text-lg font-semibold mb-1 group-hover:text-blue-600 transition-colors">{ev.name}</h3>
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">{ev.description}</p>
-                      <div className="text-sm text-gray-500 space-y-1 mb-4">
-                        <div className="flex items-center">{ev.location}</div>
-                        <div className="flex items-center">{ev.date.split('-').reverse().join('/')} às {ev.time}</div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">{ev.category}</span>
-                        <button
-                          onClick={() => {
-                            setTicketCount(1);
-                            setModalEvent(ev);
-                          }}
-                          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-                        >
-                          Ver mais
-                        </button>
-                      </div>
-                    </div>
+                  <div key={ev.id} onClick={() => {
+                    setTicketCount(1);
+                    setModalEvent(ev);
+                  }}>
+                    <EventCard event={{ ...ev, onClick: () => setModalEvent(ev) }} />
                   </div>
                 ))}
               </div>
@@ -515,129 +504,177 @@ export default function Eventos() {
           </>
         )}
 
-        {/* Modal de detalhes */}
-        {modalEvent && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setModalEvent(null)}>
-            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 relative max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              <button
-                className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 z-10"
+        {/* Modal de Detalhes */}
+        <AnimatePresence>
+          {modalEvent && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
                 onClick={() => setModalEvent(null)}
+              />
+
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative bg-surface border border-white/10 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl"
               >
-                ✕
-              </button>
-              
-              {modalEvent.source === 'ticketmaster' && !modalEvent.isSynced && (
-                <div className="mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                  <p className="text-sm text-purple-800 mb-2">
-                    Este evento veio da Ticketmaster. Sincronize para adicionar ao nosso catálogo local.
-                  </p>
-                  <button
-                    onClick={() => handleSyncEvent(modalEvent.ticketmasterId)}
-                    disabled={syncingEvent === modalEvent.ticketmasterId}
-                    className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm disabled:opacity-50"
-                  >
-                    {syncingEvent === modalEvent.ticketmasterId ? 'Sincronizando...' : 'Sincronizar Evento'}
-                  </button>
-                </div>
-              )}
-
-              <div className="aspect-w-16 aspect-h-9 mb-4">
-                <img
-                  src={modalEvent.image}
-                  alt={modalEvent.name}
-                  className="w-full h-full object-cover rounded"
-                  onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/600x338?text=Evento'; }}
-                />
-              </div>
-              <h3 className="text-2xl font-bold mb-2">{modalEvent.name}</h3>
-              <p className="text-gray-700 mb-4">{modalEvent.description}</p>
-              <div className="text-sm text-gray-600 space-y-1 mb-6">
-                <div><strong>Local:</strong> {modalEvent.location}</div>
-                <div><strong>Data:</strong> {modalEvent.date.split('-').reverse().join('/')} às {modalEvent.time}</div>
-                <div><strong>Categoria:</strong> {modalEvent.category}</div>
-                {modalEvent.city && <div><strong>Cidade:</strong> {modalEvent.city}</div>}
-                {modalEvent.address && <div><strong>Endereço:</strong> {modalEvent.address}</div>}
-              </div>
-
-              <div className="mt-6">
-                {modalEvent.presentations && modalEvent.presentations.length > 0 ? (
-                  <>
-                    <h4 className="text-xl font-semibold mb-4">Apresentações disponíveis</h4>
-                    <div className="space-y-4 mb-6">
-                      {modalEvent.presentations.map((presentation, index) => (
-                        <div key={index} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
-                          <div className="flex justify-between items-start mb-2">
-                            <h5 className="font-bold text-lg text-gray-800">
-                              {presentation.name || `Apresentação ${index + 1}`}
-                            </h5>
-                            {presentation.price && (
-                              <span className="text-lg font-bold text-blue-600">
-                                R$ {parseFloat(presentation.price).toFixed(2)}
-                              </span>
-                            )}
-                          </div>
-                          {presentation.start_date && (
-                            <div className="text-sm text-gray-600 mb-2">
-                              <strong>Data:</strong> {new Date(presentation.start_date.replace(' ', 'T')).toLocaleString('pt-BR')}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <h4 className="text-xl font-semibold mb-4">Comprar ingresso</h4>
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="flex items-center border rounded-md px-2 py-1">
-                        <button 
-                          onClick={() => setTicketCount(Math.max(1, ticketCount - 1))} 
-                          className="px-3 py-1 hover:bg-gray-100 rounded transition-colors"
-                        >
-                          -
-                        </button>
-                        <div className="px-4 font-bold">{ticketCount}</div>
-                        <button 
-                          onClick={() => setTicketCount(Math.min(10, ticketCount + 1))} 
-                          className="px-3 py-1 hover:bg-gray-100 rounded transition-colors"
-                        >
-                          +
-                        </button>
-                      </div>
-                      {modalEvent.price > 0 && (
-                        <>
-                          <div className="text-sm text-gray-700">
-                            Preço por ingresso: <span className="font-semibold text-blue-600">R$ {modalEvent.price.toFixed(2)}</span>
-                          </div>
-                          <div className="ml-auto text-sm font-bold">
-                            Total: <span className="text-green-600">R$ {(modalEvent.price * ticketCount).toFixed(2)}</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    <button
-                      onClick={handleProceedToPayment}
-                      disabled={processingPurchase}
-                      className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      {processingPurchase ? 'Carregando...' : 'Ir para pagamento'}
-                    </button>
-                  </>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-3 mt-6">
-                <button 
-                  onClick={() => setModalEvent(null)} 
-                  className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                {/* Close Button */}
+                <button
+                  onClick={() => setModalEvent(null)}
+                  className="absolute top-4 right-4 p-2 rounded-full bg-black/50 text-white hover:bg-white hover:text-black transition-colors z-10"
                 >
-                  Fechar
+                  <X className="w-5 h-5" />
                 </button>
-              </div>
+
+                {/* Modal Content */}
+                <div className="relative h-64 sm:h-80">
+                  <img
+                    src={modalEvent.image}
+                    alt={modalEvent.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
+                  <div className="absolute bottom-0 left-0 p-6">
+                    <span className="px-3 py-1 rounded-lg bg-primary text-white text-sm font-bold mb-2 inline-block">
+                      {modalEvent.category}
+                    </span>
+                    <h2 className="text-3xl font-bold text-white">{modalEvent.name}</h2>
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-6">
+                  {/* Info Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex items-center gap-3 text-gray-300">
+                      <Calendar className="w-5 h-5 text-primary" />
+                      <div>
+                        <p className="text-xs text-gray-500">Data e Hora</p>
+                        <p className="font-medium">{modalEvent.date.split('-').reverse().join('/')} às {modalEvent.time}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 text-gray-300">
+                      <MapPin className="w-5 h-5 text-primary" />
+                      <div>
+                        <p className="text-xs text-gray-500">Local</p>
+                        <p className="font-medium">{modalEvent.location}</p>
+                        <p className="text-xs text-gray-500">{modalEvent.address}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-white/10" />
+
+                  <div className="prose prose-invert max-w-none">
+                    <h3 className="text-lg font-bold text-white mb-2">Sobre o evento</h3>
+                    <p className="text-gray-400">{modalEvent.description}</p>
+                  </div>
+
+                  {/* Ticketmaster Sync Warning */}
+                  {modalEvent.source === 'ticketmaster' && !modalEvent.isSynced && (
+                    <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 flex items-center justify-between gap-4">
+                      <p className="text-sm text-purple-300">
+                        Este evento é da Ticketmaster. Sincronize para habilitar a compra.
+                      </p>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleSyncEvent(modalEvent.ticketmasterId)}
+                        disabled={syncingEvent === modalEvent.ticketmasterId}
+                      >
+                        {syncingEvent === modalEvent.ticketmasterId ? 'Sincronizando...' : 'Sincronizar'}
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Purchase Section */}
+                  <div className="bg-white/5 rounded-xl p-6 border border-white/10">
+                    {modalEvent.presentations && modalEvent.presentations.length > 0 ? (
+                      <div className="space-y-4">
+                        <h4 className="text-lg font-bold text-white">Apresentações Disponíveis</h4>
+                        {modalEvent.presentations.map((presentation, index) => (
+                          <div key={index} className="flex justify-between items-center p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer border border-white/5">
+                            <div>
+                              <p className="font-bold text-white">{presentation.name || `Sessão ${index + 1}`}</p>
+                              <p className="text-sm text-gray-400">
+                                {new Date(presentation.start_date.replace(' ', 'T')).toLocaleString('pt-BR')}
+                              </p>
+                            </div>
+                            <span className="text-primary font-bold">
+                              R$ {parseFloat(presentation.price).toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <>
+                        {getSeatConfigForCategory(modalEvent.category || modalEvent.name) ? (
+                          <div className="text-center space-y-4">
+                            <p className="text-gray-300">Este evento possui mapa de assentos.</p>
+                            <Button
+                              variant="primary"
+                              className="w-full"
+                              onClick={handleSelectSeats}
+                              disabled={processingPurchase}
+                            >
+                              {processingPurchase ? 'Carregando...' : 'Selecionar Lugares'}
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm text-gray-400">Preço por ingresso</p>
+                                <p className="text-2xl font-bold text-white">R$ {modalEvent.price.toFixed(2)}</p>
+                              </div>
+
+                              <div className="flex items-center gap-3 bg-black/30 rounded-lg p-1">
+                                <button
+                                  onClick={() => setTicketCount(Math.max(1, ticketCount - 1))}
+                                  className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-white transition-colors"
+                                >
+                                  -
+                                </button>
+                                <span className="font-bold text-white w-4 text-center">{ticketCount}</span>
+                                <button
+                                  onClick={() => setTicketCount(Math.min(10, ticketCount + 1))}
+                                  className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-white transition-colors"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                              <span className="text-gray-400">Total</span>
+                              <span className="text-2xl font-bold text-primary">
+                                R$ {(modalEvent.price * ticketCount).toFixed(2)}
+                              </span>
+                            </div>
+
+                            <Button
+                              variant="primary"
+                              className="w-full"
+                              size="lg"
+                              onClick={handleProceedToPayment}
+                              disabled={processingPurchase}
+                            >
+                              {processingPurchase ? 'Processando...' : 'Comprar Ingressos'}
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
             </div>
-          </div>
-        )}
-      </main>
-    </div>
+          )}
+        </AnimatePresence>
+      </div>
+    </Layout>
   );
 }
