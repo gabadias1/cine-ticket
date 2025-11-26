@@ -2,7 +2,7 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache openssl build-base python3
+RUN apk add --no-cache openssl build-base python3 dos2unix
 
 # Criar usuário não-root
 RUN addgroup -g 1001 -S nodejs
@@ -13,6 +13,9 @@ RUN npm install
 RUN npm install -g nodemon
 
 COPY . .
+
+# Converter entrypoint para LF (Unix) para evitar erros no Windows
+RUN dos2unix /app/docker-entrypoint.sh
 
 # Configurar variáveis de ambiente
 ENV DATABASE_URL="file:./dev.db"

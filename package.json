@@ -13,11 +13,13 @@
     "setup": "npm --prefix backend install"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.23.24",
+    "lucide-react": "^0.554.0",
     "next": "^14.0.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
-    "react-slick": "^0.31.0",
-    "slick-carousel": "^1.8.1"
+    "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
     "@tailwindcss/aspect-ratio": "^0.4.2",

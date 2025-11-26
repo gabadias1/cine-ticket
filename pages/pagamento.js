@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
-import LocationSelector from '../components/LocationSelector';
+import Layout from '../components/Layout';
+import Button from '../components/ui/Button';
+import { CreditCard, Wallet, Smartphone, Check, AlertCircle, ArrowLeft, Lock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Pagamento() {
   const router = useRouter();
@@ -40,19 +43,22 @@ export default function Pagamento() {
 
     // Verificar se é compra de evento
     if (router.query.tipo === 'evento') {
+      const price = parseFloat(router.query.price) || 0;
+      const qty = parseInt(router.query.qty) || 1;
+
       setTipoCompra('evento');
       setEventoData({
         id: router.query.eventId,
         name: router.query.eventName,
         sector: router.query.sector,
-        price: parseFloat(router.query.price),
+        price: price,
         date: router.query.eventDate
       });
       setIngressos([{
         tipo: router.query.sector,
-        preco: parseFloat(router.query.price)
+        preco: price
       }]);
-      setTotalPreco(parseFloat(router.query.price));
+      setTotalPreco(price * qty);
       return;
     }
 
@@ -165,7 +171,7 @@ export default function Pagamento() {
         );
 
         setSucesso('Ingresso do evento comprado com sucesso!');
-        
+
         setTimeout(() => {
           router.push(`/perfil?tab=eventos`);
         }, 2000);
@@ -173,8 +179,11 @@ export default function Pagamento() {
         // Pagamento de cinema
         const ticketDetails = ingressos.map(i => ({
           sessionId: i.sessionId,
+          eventId: i.eventId,
           seatId: i.seatId,
-          price: i.preco
+          price: i.preco,
+          areaNome: i.areaNome,
+          tipo: i.tipo
         }));
 
         await api.processPayment(
@@ -187,7 +196,7 @@ export default function Pagamento() {
 
         setSucesso('Pagamento realizado com sucesso! Seus ingressos foram salvos.');
         sessionStorage.removeItem('ingressoData');
-        
+
         setTimeout(() => {
           router.push(`/perfil?tab=ingressos`);
         }, 2000);
@@ -224,7 +233,7 @@ export default function Pagamento() {
           );
 
           setSucesso('Pagamento via PIX confirmado! Seu ingresso foi salvo.');
-          
+
           setTimeout(() => {
             router.push(`/perfil?tab=eventos`);
           }, 2000);
@@ -238,8 +247,11 @@ export default function Pagamento() {
 
           const ticketDetails = ingressos.map(i => ({
             sessionId: i.sessionId,
+            eventId: i.eventId,
             seatId: i.seatId,
-            price: i.preco
+            price: i.preco,
+            areaNome: i.areaNome,
+            tipo: i.tipo
           }));
 
           await api.processPayment(
@@ -252,7 +264,7 @@ export default function Pagamento() {
 
           setSucesso('Pagamento via PIX confirmado! Seus ingressos foram salvos.');
           sessionStorage.removeItem('ingressoData');
-          
+
           setTimeout(() => {
             router.push(`/perfil?tab=ingressos`);
           }, 2000);
@@ -268,344 +280,312 @@ export default function Pagamento() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 py-4 px-6 shadow-sm">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-8">
-            <button onClick={() => router.push("/")} className="flex items-center space-x-3 h-10">
-              <img src="/images/logo.png" alt="CineTicket" className="h-full w-auto object-contain" />
-            </button>
-            
-            {/* Location Selector */}
-            <LocationSelector />
-            
-            <nav className="hidden lg:flex space-x-8">
-              <button
-                onClick={() => router.push("/filmes")}
-                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-              >
-                Filmes
-              </button>
-              <button
-                onClick={() => router.push("/eventos")}
-                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-              >
-                Eventos
-              </button>
-            </nav>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            {user ? (
-              <div className="flex items-center space-x-3">
-                <span className="text-gray-700 hidden sm:inline text-sm font-medium">Olá, {user.name}</span>
-                <button
-                  onClick={() => router.push("/perfil")}
-                  className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
-                  title="Meu Perfil"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span>Perfil</span>
-                </button>
-                <button
-                  onClick={() => {
-                    logout();
-                    router.push('/');
-                  }}
-                  className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
-                  title="Sair"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  <span>Sair</span>
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => router.push("/login")}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors font-medium"
-              >
-                Entrar
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
+    <Layout title="Pagamento - CineTicket">
+      <div className="pt-24 pb-12 px-6 max-w-4xl mx-auto min-h-screen">
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <div className="mb-6">
+        {/* Header */}
+        <div className="mb-8">
           <button
             onClick={voltarAssentos}
-            className="text-gray-600 hover:text-blue-600 mb-4 flex items-center gap-2 transition-colors"
+            className="text-gray-400 hover:text-white mb-4 flex items-center gap-2 transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-            </svg>
+            <ArrowLeft className="w-5 h-5" />
             Voltar
           </button>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">💳 Pagamento</h1>
-          <p className="text-gray-600">Escolha a forma de pagamento para seus ingressos</p>
+          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+            <Lock className="w-8 h-8 text-primary" />
+            Pagamento Seguro
+          </h1>
+          <p className="text-gray-400">Escolha a forma de pagamento para finalizar sua compra</p>
         </div>
 
-        {/* Resumo dos ingressos */}
-        {(ingressos.length > 0 || eventoData) && (
-          <div className="bg-white rounded-lg p-6 mb-8 border border-gray-200 shadow-md">
-            <h2 className="text-xl font-bold mb-4 text-gray-800">Resumo do Pedido</h2>
-            
-            {tipoCompra === 'evento' && eventoData ? (
-              <div className="space-y-2 mb-4">
-                <div className="flex justify-between text-gray-700">
-                  <span>Evento: {eventoData.name}</span>
-                </div>
-                <div className="flex justify-between text-gray-700">
-                  <span>Setor: {eventoData.sector}</span>
-                </div>
-                <div className="flex justify-between text-gray-700">
-                  <span>Data: {eventoData.date}</span>
-                </div>
-                <div className="flex justify-between text-gray-700">
-                  <span>Ingresso</span>
-                  <span>R$ {eventoData.price?.toFixed(2) || '0.00'}</span>
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Order Summary */}
+          <div className="md:col-span-1 order-2 md:order-1">
+            <div className="bg-surface border border-white/10 rounded-2xl p-6 sticky top-24">
+              <h2 className="text-xl font-bold text-white mb-4">Resumo do Pedido</h2>
+
+              <div className="space-y-4 mb-6">
+                {(ingressos.length > 0 || eventoData) && (
+                  <>
+                    {tipoCompra === 'evento' && eventoData ? (
+                      <div className="space-y-2 text-sm text-gray-400">
+                        <div className="flex justify-between">
+                          <span>Evento</span>
+                          <span className="text-white text-right">{eventoData.name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Setor</span>
+                          <span className="text-white">{eventoData.sector}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Data</span>
+                          <span className="text-white">{eventoData.date}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Qtd.</span>
+                          <span className="text-white">{router.query.qty || 1}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 text-sm text-gray-400">
+                        {ingressos.map((ing, idx) => (
+                          <div key={idx} className="flex justify-between">
+                            <span>Ingresso {idx + 1} ({ing.tipo})</span>
+                            <span className="text-white">R$ {ing.preco?.toFixed(2) || '0.00'}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
-            ) : (
-              <div className="space-y-2 mb-4">
-                {ingressos.map((ing, idx) => (
-                  <div key={idx} className="flex justify-between text-gray-700">
-                    <span>Ingresso {idx + 1} ({ing.tipo})</span>
-                    <span>R$ {ing.preco?.toFixed(2) || '0.00'}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            <div className="border-t border-gray-200 pt-4">
-              <div className="flex justify-between text-xl font-bold">
-                <span className="text-gray-800">Total</span>
-                <span className="text-red-600">R$ {totalPreco.toFixed(2)}</span>
+
+              <div className="border-t border-white/10 pt-4">
+                <div className="flex justify-between items-end">
+                  <span className="text-gray-400">Total</span>
+                  <span className="text-2xl font-bold text-primary">R$ {totalPreco.toFixed(2)}</span>
+                </div>
               </div>
             </div>
           </div>
-        )}
 
-        {/* Mensagens */}
-        {erro && (
-          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6">
-            {erro}
-          </div>
-        )}
-        {sucesso && (
-          <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-6">
-            {sucesso}
-          </div>
-        )}
+          {/* Payment Methods */}
+          <div className="md:col-span-2 order-1 md:order-2">
+            {/* Error/Success Messages */}
+            <AnimatePresence>
+              {erro && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="bg-red-500/10 border border-red-500/50 text-red-200 px-6 py-4 rounded-xl mb-6 flex items-center gap-3"
+                >
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  {erro}
+                </motion.div>
+              )}
+              {sucesso && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="bg-green-500/10 border border-green-500/50 text-green-200 px-6 py-4 rounded-xl mb-6 flex items-center gap-3"
+                >
+                  <Check className="w-5 h-5 flex-shrink-0" />
+                  {sucesso}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-        {/* Métodos de pagamento */}
-        <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-md">
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            {[
-              { id: 'CREDITO', nome: 'Crédito', icon: '💳' },
-              { id: 'DEBITO', nome: 'Débito', icon: '🏦' },
-              { id: 'PIX', nome: 'PIX', icon: '📱' }
-            ].map(opcao => (
-              <button
-                key={opcao.id}
-                onClick={() => {
-                  setMetodo(opcao.id);
-                  setPixCode('');
-                  setErro('');
-                }}
-                className={`p-4 rounded-lg border-2 transition ${
-                  metodo === opcao.id
-                    ? 'border-red-500 bg-red-50'
-                    : 'border-gray-200 hover:border-gray-300 bg-gray-50'
-                }`}
-              >
-                <div className="text-2xl mb-2">{opcao.icon}</div>
-                <div className={`font-semibold ${metodo === opcao.id ? 'text-red-600' : 'text-gray-700'}`}>{opcao.nome}</div>
-              </button>
-            ))}
-          </div>
-
-          {/* Formulário de Crédito/Débito */}
-          {(metodo === 'CREDITO' || metodo === 'DEBITO') && (
-            <form onSubmit={handlePagarCartao} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Número do Cartão
-                </label>
-                <input
-                  type="text"
-                  placeholder="0000 0000 0000 0000"
-                  value={cartao.numero}
-                  onChange={(e) =>
-                    setCartao({
-                      ...cartao,
-                      numero: formatarNumeroCartao(e.target.value)
-                    })
-                  }
-                  className="w-full bg-white border border-gray-300 rounded px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                  maxLength="23"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  {cartao.numero ? `✓ ${cartao.numero.length - (cartao.numero.match(/\s/g)?.length || 0)} dígitos` : ''}
-                </p>
+            <div className="bg-surface border border-white/10 rounded-2xl p-6 mb-6">
+              <div className="grid grid-cols-3 gap-4 mb-8">
+                {[
+                  { id: 'CREDITO', nome: 'Crédito', icon: CreditCard },
+                  { id: 'DEBITO', nome: 'Débito', icon: Wallet },
+                  { id: 'PIX', nome: 'PIX', icon: Smartphone }
+                ].map(opcao => (
+                  <button
+                    key={opcao.id}
+                    onClick={() => {
+                      setMetodo(opcao.id);
+                      setPixCode('');
+                      setErro('');
+                    }}
+                    className={`p-4 rounded-xl border transition-all flex flex-col items-center gap-2 ${metodo === opcao.id
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-white/10 bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white'
+                      }`}
+                  >
+                    <opcao.icon className="w-6 h-6" />
+                    <span className="font-semibold text-sm">{opcao.nome}</span>
+                  </button>
+                ))}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Titular do Cartão
-                </label>
-                <input
-                  type="text"
-                  placeholder="Nome completo"
-                  value={cartao.titular}
-                  onChange={(e) =>
-                    setCartao({ ...cartao, titular: e.target.value.toUpperCase() })
-                  }
-                  className="w-full bg-white border border-gray-300 rounded px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Mês
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="MM"
-                    value={cartao.mes}
-                    onChange={(e) =>
-                      setCartao({
-                        ...cartao,
-                        mes: e.target.value.slice(0, 2)
-                      })
-                    }
-                    min="1"
-                    max="12"
-                    className="w-full bg-white border border-gray-300 rounded px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Ano
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="YY"
-                    value={cartao.ano}
-                    onChange={(e) =>
-                      setCartao({
-                        ...cartao,
-                        ano: e.target.value.slice(0, 2)
-                      })
-                    }
-                    min={new Date().getFullYear() % 100}
-                    className="w-full bg-white border border-gray-300 rounded px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    CVV
-                  </label>
-                  <input
-                    type="password"
-                    placeholder="XXX"
-                    value={cartao.cvv}
-                    onChange={(e) =>
-                      setCartao({
-                        ...cartao,
-                        cvv: e.target.value.slice(0, 4)
-                      })
-                    }
-                    maxLength="4"
-                    className="w-full bg-white border border-gray-300 rounded px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={carregando}
-                className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-900 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition mt-6"
-              >
-                {carregando ? 'Processando...' : `Pagar R$ ${totalPreco.toFixed(2)}`}
-              </button>
-            </form>
-          )}
-
-          {/* Formulário de PIX */}
-          {metodo === 'PIX' && (
-            <form onSubmit={handlePagarPix} className="space-y-4">
-              {!pixCode ? (
-                <>
+              {/* Credit/Debit Form */}
+              {(metodo === 'CREDITO' || metodo === 'DEBITO') && (
+                <form onSubmit={handlePagarCartao} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">
+                    <label className="block text-sm font-medium text-gray-400 mb-2">
+                      Número do Cartão
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="0000 0000 0000 0000"
+                        value={cartao.numero}
+                        onChange={(e) =>
+                          setCartao({
+                            ...cartao,
+                            numero: formatarNumeroCartao(e.target.value)
+                          })
+                        }
+                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                        maxLength="23"
+                      />
+                      <CreditCard className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-400 mb-2">
                       Nome do Titular
                     </label>
                     <input
                       type="text"
-                      placeholder="Seu nome"
-                      value={titularPix}
-                      onChange={(e) => setTitularPix(e.target.value)}
-                      className="w-full bg-white border border-gray-300 rounded px-4 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500"
+                      placeholder="NOME COMO NO CARTÃO"
+                      value={cartao.titular}
+                      onChange={(e) =>
+                        setCartao({ ...cartao, titular: e.target.value.toUpperCase() })
+                      }
+                      className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
                     />
                   </div>
 
-                  <div className="bg-blue-50 border border-blue-200 rounded p-4 text-sm text-gray-700">
-                    <p className="mb-2">
-                      Ao clicar em "Gerar código PIX", você receberá um código único para copiar e colar em seu aplicativo bancário.
-                    </p>
-                    <p>Após completar a transferência PIX, seus ingressos serão salvos automaticamente.</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-2">
+                          Mês
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="MM"
+                          value={cartao.mes}
+                          onChange={(e) =>
+                            setCartao({
+                              ...cartao,
+                              mes: e.target.value.slice(0, 2)
+                            })
+                          }
+                          min="1"
+                          max="12"
+                          className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-center"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-2">
+                          Ano
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="YY"
+                          value={cartao.ano}
+                          onChange={(e) =>
+                            setCartao({
+                              ...cartao,
+                              ano: e.target.value.slice(0, 2)
+                            })
+                          }
+                          min={new Date().getFullYear() % 100}
+                          className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-center"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-400 mb-2">
+                        CVV
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="password"
+                          placeholder="123"
+                          value={cartao.cvv}
+                          onChange={(e) =>
+                            setCartao({
+                              ...cartao,
+                              cvv: e.target.value.slice(0, 4)
+                            })
+                          }
+                          maxLength="4"
+                          className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors text-center"
+                        />
+                        <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                      </div>
+                    </div>
                   </div>
 
-                  <button
+                  <Button
                     type="submit"
                     disabled={carregando}
-                    className="w-full bg-red-600 hover:bg-red-700 disabled:bg-red-900 disabled:opacity-50 text-white font-bold py-3 rounded-lg transition"
+                    className="w-full mt-6"
+                    size="lg"
                   >
-                    {carregando ? 'Gerando código...' : 'Gerar Código PIX'}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="bg-gray-50 p-6 rounded-lg text-center border-2 border-green-500">
-                    <p className="text-sm text-gray-600 mb-4">Seu código PIX:</p>
-                    <p className="text-2xl font-mono font-bold mb-4 break-all text-gray-800">
-                      {pixCode}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={copiarCodigoPix}
-                      className={`w-full py-2 rounded-lg font-semibold transition ${
-                        copiado
-                          ? 'bg-green-600 text-white'
-                          : 'bg-blue-600 hover:bg-blue-700 text-white'
-                      }`}
-                    >
-                      {copiado ? '✓ Copiado!' : 'Copiar Código'}
-                    </button>
-                  </div>
-
-                  <div className="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg text-sm">
-                    <p>
-                      ⏱️ Processando pagamento... Seus ingressos serão salvos em breve!
-                    </p>
-                  </div>
-                </>
+                    {carregando ? 'Processando...' : `Pagar R$ ${totalPreco.toFixed(2)}`}
+                  </Button>
+                </form>
               )}
-            </form>
-          )}
+
+              {/* PIX Form */}
+              {metodo === 'PIX' && (
+                <form onSubmit={handlePagarPix} className="space-y-6">
+                  {!pixCode ? (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-2">
+                          Nome Completo
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Digite seu nome completo"
+                          value={titularPix}
+                          onChange={(e) => setTitularPix(e.target.value)}
+                          className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                        />
+                      </div>
+
+                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 text-sm text-blue-200">
+                        <p className="mb-2 font-semibold">Como funciona:</p>
+                        <ul className="list-disc list-inside space-y-1 text-blue-300/80">
+                          <li>Ao clicar em "Gerar Código PIX", um código será gerado.</li>
+                          <li>Copie o código e pague no app do seu banco.</li>
+                          <li>A aprovação é instantânea e seus ingressos serão liberados.</li>
+                        </ul>
+                      </div>
+
+                      <Button
+                        type="submit"
+                        disabled={carregando}
+                        className="w-full"
+                        size="lg"
+                      >
+                        {carregando ? 'Gerando código...' : 'Gerar Código PIX'}
+                      </Button>
+                    </>
+                  ) : (
+                    <div className="space-y-6">
+                      <div className="bg-white p-6 rounded-xl text-center">
+                        <div className="w-48 h-48 bg-gray-900 mx-auto mb-4 rounded-lg flex items-center justify-center text-gray-500 text-xs">
+                          QR CODE SIMULADO
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">Código PIX Copia e Cola:</p>
+                        <div className="bg-gray-100 p-3 rounded-lg break-all font-mono text-xs text-gray-800 mb-4 border border-gray-200">
+                          {pixCode}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={copiarCodigoPix}
+                          className="w-full"
+                        >
+                          {copiado ? 'Copiado!' : 'Copiar Código'}
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center justify-center gap-3 text-blue-400 animate-pulse">
+                        <div className="w-2 h-2 bg-blue-400 rounded-full" />
+                        <span className="text-sm font-medium">Aguardando pagamento...</span>
+                      </div>
+                    </div>
+                  )}
+                </form>
+              )}
+            </div>
+          </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </Layout>
   );
 }

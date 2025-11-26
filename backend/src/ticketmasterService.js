@@ -18,9 +18,8 @@ class TicketmasterService {
   buildParams(params = {}) {
     const query = {
       apikey: this.apiKey,
-      countryCode: 'BR',
-      locale: 'pt-br',
-      sort: params.sort || 'date,asc'
+      sort: params.sort || 'date,asc',
+      countryCode: 'BR'
     };
 
     if (params.keyword) query.keyword = params.keyword;
