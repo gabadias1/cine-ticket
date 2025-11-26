@@ -27,6 +27,8 @@ services:
     volumes:
       - ./backend:/app:z
       - /app/node_modules
+    env_file:
+      - ./backend/.env
     environment:
       - NODE_ENV=development
       - DATABASE_URL=file:./dev.db

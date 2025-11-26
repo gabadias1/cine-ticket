@@ -1,12 +1,16 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import LocationSelector from "../components/LocationSelector";
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../utils/api';
+import Layout from '../components/Layout';
+import MovieCard from '../components/movies/MovieCard';
+import Button from '../components/ui/Button';
+import { Search, Filter, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Filmes() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [movies, setMovies] = useState([]);
   const [filteredMovies, setFilteredMovies] = useState([]);
   const [genres, setGenres] = useState([]);
@@ -30,31 +34,19 @@ export default function Filmes() {
       try {
         setIsLoading(true);
         setError('');
-        console.log('Iniciando carregamento de dados...');
-        
+
         let moviesData = [];
-        
-        // Priorizar banco local (tem todos os filmes sincronizados)
+
         try {
           const localMovies = await api.getMovies();
-          console.log('Filmes do banco local carregados:', localMovies.length);
-          
-          // Converter filmes locais para formato similar ao TMDB
           moviesData = localMovies.map(movie => {
-            // Construir URL do poster corretamente
             let posterPath = movie.posterPath || movie.imageUrl || null;
             if (posterPath) {
-              if (posterPath.startsWith('http')) {
-                // Já é uma URL completa, usar como está
-              } else if (posterPath.startsWith('/')) {
-                // Caminho do TMDB (ex: /abc123.jpg), adicionar base URL
-                posterPath = `https://image.tmdb.org/t/p/w500${posterPath}`;
-              } else {
-                // Caminho sem barra inicial, adicionar barra e base URL
-                posterPath = `https://image.tmdb.org/t/p/w500/${posterPath}`;
+              if (!posterPath.startsWith('http')) {
+                posterPath = `https://image.tmdb.org/t/p/w500${posterPath.startsWith('/') ? posterPath : '/' + posterPath}`;
               }
             }
-            
+
             return {
               id: movie.tmdbId || movie.id,
               title: movie.title,
@@ -66,47 +58,32 @@ export default function Filmes() {
               genre_ids: []
             };
           });
-          
-          console.log('Filmes processados do banco local:', moviesData.length, 'filmes');
         } catch (localError) {
           console.warn('Erro ao carregar do banco local, tentando TMDB:', localError);
-          
-          // Fallback: tentar carregar do TMDB se o banco local falhar
           try {
             const tmdbData = await api.getTMDBPopular(1);
-            console.log('Filmes TMDB carregados:', tmdbData);
-            
-            // Verificar se a resposta tem a estrutura esperada
             moviesData = tmdbData?.results || tmdbData?.data?.results || [];
-            console.log('Filmes processados do TMDB:', moviesData.length, 'filmes');
           } catch (tmdbError) {
-            console.error('Erro ao carregar do TMDB:', tmdbError);
             throw new Error('Não foi possível carregar filmes. Verifique sua conexão.');
           }
         }
-        
+
         if (moviesData.length === 0) {
-          console.warn('Nenhum filme encontrado');
           setError('Nenhum filme encontrado. Tente novamente mais tarde.');
         }
-        
+
         setMovies(moviesData);
         setFilteredMovies(moviesData);
-        
-        // Carregar gêneros separadamente (não é crítico)
+
         try {
           const genresData = await api.getTMDBGenres();
           setGenres(genresData?.genres || genresData?.data?.genres || []);
         } catch (genresError) {
           console.warn('Erro ao carregar gêneros:', genresError);
-          setGenres([]);
         }
-        
+
       } catch (error) {
-        console.error('Erro ao carregar dados:', error);
-        console.error('Detalhes do erro:', error.message, error.stack);
-        setError(error.message || 'Erro ao carregar filmes. Tente novamente mais tarde.');
-        // Se não conseguir carregar filmes, mostrar lista vazia
+        setError(error.message || 'Erro ao carregar filmes.');
         setMovies([]);
         setFilteredMovies([]);
       } finally {
@@ -130,7 +107,6 @@ export default function Filmes() {
     if (selectedGenre) {
       filtered = filtered.filter(movie => {
         if (movie.genre_ids) {
-          // Verificar se o filme tem o gênero selecionado
           return movie.genre_ids.includes(parseInt(selectedGenre));
         }
         return false;
@@ -156,313 +132,143 @@ export default function Filmes() {
     }
   }, [searchQuery]);
 
-  useEffect(() => {
-    if (router.query?.focusSearch) {
-      focusSearchInput();
-
-      const { focusSearch, ...rest } = router.query;
-      router.replace({ pathname: router.pathname, query: rest }, undefined, { shallow: true }).catch(() => {});
-    }
-  }, [router, router.query?.focusSearch, focusSearchInput]);
-
-
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200 py-4 px-6 shadow-sm">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-8">
-            <button onClick={() => router.push("/")} className="flex items-center space-x-3 h-10">
-              <img src="/images/logo.png" alt="CineTicket" className="h-full w-auto object-contain" />
-            </button>
-            
-            {/* Location Selector */}
-            <LocationSelector />
-            
-            <nav className="hidden lg:flex space-x-8">
-              <button
-                onClick={() => router.push("/filmes")}
-                className="text-blue-600 hover:text-blue-700 transition-colors font-medium underline underline-offset-4"
-              >
-                Filmes
-              </button>
-              <button
-                onClick={() => router.push("/eventos")}
-                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
-              >
-                Eventos
-              </button>
-            </nav>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <button
-              className="p-2 text-gray-600 hover:text-blue-600 transition-colors"
-              onClick={focusSearchInput}
-              type="button"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-              </svg>
-            </button>
-            {user ? (
-              <div className="flex items-center space-x-3">
-                <span className="text-gray-700 hidden sm:inline text-sm font-medium">Olá, {user.name}</span>
-                <button
-                  onClick={() => router.push("/perfil")}
-                  className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
-                  title="Meu Perfil"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span>Perfil</span>
-                </button>
-                <button
-                  onClick={logout}
-                  className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
-                  title="Sair"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  <span>Sair</span>
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => router.push("/login")}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-full transition-colors font-medium"
-              >
-                Entrar
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
+    <Layout title="Filmes - CineTicket">
+      <div className="pt-24 pb-12 px-6 max-w-7xl mx-auto min-h-screen">
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-800">Todos os Filmes</h2>
-        </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            <p className="font-semibold">Erro ao carregar filmes</p>
-            <p className="text-sm">{error}</p>
-            <button
-              onClick={() => {
-                setError('');
-                window.location.reload();
-              }}
-              className="mt-2 text-sm underline hover:no-underline"
-            >
-              Tentar novamente
-            </button>
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-2">Catálogo de Filmes</h1>
+            <p className="text-gray-400">Explore os últimos lançamentos e clássicos do cinema</p>
           </div>
-        )}
 
-        {/* Search and Filters */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-          <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="flex-1">
+          {/* Search & Filter Bar */}
+          <div className="w-full md:w-auto flex flex-col sm:flex-row gap-4 bg-white/5 p-2 rounded-2xl border border-white/10 backdrop-blur-sm">
+            <form onSubmit={handleSearch} className="relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-primary transition-colors" />
               <input
                 type="text"
                 placeholder="Buscar filmes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 ref={searchInputRef}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full sm:w-64 bg-transparent border-none text-white placeholder-gray-500 focus:ring-0 pl-10 py-2.5"
               />
-            </div>
-            
-          </form>
+            </form>
 
-          <div className="flex flex-wrap gap-2">
-            <select
-              value={selectedGenre}
-              onChange={(e) => setSelectedGenre(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Todos os gêneros</option>
-              {genres.map((genre) => (
-                <option key={genre.id} value={genre.id}>
-                  {genre.name}
-                </option>
-              ))}
-            </select>
-            
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedGenre('');
-                setShowTMDBResults(false);
-              }}
-              className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
-            >
-              Limpar Filtros
-            </button>
+            <div className="h-px sm:h-auto sm:w-px bg-white/10" />
+
+            <div className="flex gap-2">
+              <div className="relative">
+                <select
+                  value={selectedGenre}
+                  onChange={(e) => setSelectedGenre(e.target.value)}
+                  className="appearance-none bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-primary transition-colors cursor-pointer w-full sm:w-48"
+                >
+                  <option value="" className="bg-gray-900">Todos os Gêneros</option>
+                  {genres.map((genre) => (
+                    <option key={genre.id} value={genre.id} className="bg-gray-900">
+                      {genre.name}
+                    </option>
+                  ))}
+                </select>
+                <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
+
+              {(searchQuery || selectedGenre || showTMDBResults) && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedGenre('');
+                    setShowTMDBResults(false);
+                  }}
+                  className="p-2.5 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white transition-colors"
+                  title="Limpar Filtros"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* TMDB Search Results */}
-        {showTMDBResults && (
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-800">
-                Resultados da busca: "{searchQuery}"
-              </h3>
-              <button
-                onClick={() => setShowTMDBResults(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕ Fechar
+        {/* Error Message */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-red-500/10 border border-red-500/50 text-red-200 px-6 py-4 rounded-xl mb-8 flex items-center justify-between"
+            >
+              <span>{error}</span>
+              <button onClick={() => window.location.reload()} className="text-sm underline hover:text-white">
+                Tentar novamente
               </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {tmdbResults.map((movie) => (
-                <div
-                  key={movie.id}
-                  className="bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl group"
-                >
-                  <div className="relative">
-                    <div className="aspect-w-2 aspect-h-3 bg-gray-200 flex items-center justify-center relative">
-                      {movie.poster_path ? (
-                        <img
-                          src={movie.poster_path.startsWith('http') 
-                            ? movie.poster_path 
-                            : `https://image.tmdb.org/t/p/w500${movie.poster_path.startsWith('/') ? movie.poster_path : '/' + movie.poster_path}`}
-                          alt={movie.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            const placeholder = e.target.parentElement.querySelector('.poster-placeholder');
-                            if (placeholder) placeholder.style.display = 'flex';
-                          }}
-                        />
-                      ) : null}
-                      <div className={`poster-placeholder absolute inset-0 flex items-center justify-center bg-gray-200 ${movie.poster_path ? 'hidden' : 'flex'}`}>
-                        <div className="text-center text-gray-400">
-                          <svg className="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          <p className="text-xs">Sem poster</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="absolute top-2 right-2 bg-yellow-400 text-xs font-bold px-2 py-1 rounded-full">
-                      ⭐ {movie.vote_average?.toFixed(1) || 'N/A'}
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold text-lg group-hover:text-blue-600 transition-colors mb-2">
-                      {movie.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-3">
-                      {movie.overview}
-                    </p>
-                    <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                      <span>{movie.release_date?.split('-')[0] || 'N/A'}</span>
-                      <span>{movie.adult ? '18+' : 'L'}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Local Movies */}
-        {!showTMDBResults && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {isLoading ? (
-              <div className="col-span-full text-center py-8">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <p className="mt-2 text-gray-600">Carregando filmes...</p>
+        {/* TMDB Results Section */}
+        <AnimatePresence>
+          {showTMDBResults && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-16"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <span className="w-1 h-8 bg-primary rounded-full" />
+                  Resultados da busca global
+                </h2>
+                <Button variant="ghost" size="sm" onClick={() => setShowTMDBResults(false)}>
+                  Fechar Resultados
+                </Button>
               </div>
-            ) : filteredMovies.length === 0 ? (
-              <div className="col-span-full text-center py-8">
-                <p className="text-gray-600 mb-4">Nenhum filme encontrado.</p>
-                <p className="text-sm text-gray-500">
-                  Tente ajustar seus filtros ou use a busca para encontrar filmes.
-                </p>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                {tmdbResults.map((movie) => (
+                  <MovieCard key={movie.id} movie={movie} />
+                ))}
               </div>
-            ) : (
-              filteredMovies.map((movie) => (
-                <div
-                  key={movie.id}
-                  className="bg-white rounded-lg shadow-lg overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-xl group h-full flex flex-col"
-                >
-                  <div className="relative">
-                    <div className="aspect-w-2 aspect-h-3 bg-gray-200 flex items-center justify-center relative">
-                      {movie.poster_path ? (
-                        <img
-                          src={movie.poster_path.startsWith('http') 
-                            ? movie.poster_path 
-                            : `https://image.tmdb.org/t/p/w500${movie.poster_path.startsWith('/') ? movie.poster_path : '/' + movie.poster_path}`}
-                          alt={movie.title}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            const placeholder = e.target.parentElement.querySelector('.poster-placeholder');
-                            if (placeholder) placeholder.style.display = 'flex';
-                          }}
-                        />
-                      ) : null}
-                      <div className={`poster-placeholder absolute inset-0 flex items-center justify-center bg-gray-200 ${movie.poster_path ? 'hidden' : 'flex'}`}>
-                        <div className="text-center text-gray-400">
-                          <svg className="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          <p className="text-xs">Sem poster</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="absolute top-2 right-2 bg-yellow-400 text-xs font-bold px-2 py-1 rounded-full">
-                      {movie.vote_average ? `⭐ ${movie.vote_average.toFixed(1)}` : '⭐ N/A'}
-                    </div>
-                  </div>
-                  <div className="p-4 flex flex-col flex-grow">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-lg group-hover:text-blue-600 transition-colors">
-                        {movie.title}
-                      </h3>
-                      <span className="text-sm font-medium text-green-600 bg-green-100 px-2 py-1 rounded">
-                        {movie.adult ? '18+' : 'L'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-3 flex-grow">
-                      {movie.overview}
-                    </p>
-                    <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                      <span>{movie.release_date?.split('-')[0] || 'N/A'}</span>
-                    </div>
-                    <div className="space-y-2 mt-auto">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        {movie.sessions && movie.sessions.length > 0 ? 'Sessões disponíveis' : 'Verificar sessões'}
-                      </div>
-                      <button
-                        onClick={() => router.push(`/sessoes/${movie.id}`)}
-                        className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                        </svg>
-                        <span>Ver Sessões</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
+
+              <div className="my-12 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Main Grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="aspect-[2/3] bg-white/5 rounded-2xl animate-pulse" />
+            ))}
           </div>
+        ) : (
+          <>
+            {!showTMDBResults && (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                {filteredMovies.length > 0 ? (
+                  filteredMovies.map((movie) => (
+                    <MovieCard key={movie.id} movie={movie} />
+                  ))
+                ) : (
+                  <div className="col-span-full py-20 text-center">
+                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Search className="w-10 h-10 text-gray-500" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">Nenhum filme encontrado</h3>
+                    <p className="text-gray-400">Tente ajustar seus filtros ou buscar por outro termo.</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
-      </main>
-    </div>
+      </div>
+    </Layout>
   );
 }
