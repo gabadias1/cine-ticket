@@ -70,7 +70,7 @@ export default function Layout({ children, title = 'CineTicket - Premium Experie
             </Head>
 
             {/* Navbar */}
-            <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-background/80 backdrop-blur-md border-b border-white/5 py-3' : 'bg-transparent py-4'
+            <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${isScrolled ? 'bg-background/95 backdrop-blur-md border-b border-white/5 py-3' : 'bg-background py-4'
                 }`}>
                 <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
                     {/* Logo */}
@@ -289,7 +289,7 @@ export default function Layout({ children, title = 'CineTicket - Premium Experie
             </AnimatePresence>
 
             {/* Main Content */}
-            <main className="pt-24 pb-20 min-h-screen">
+            <main className="pt-32 pb-20 min-h-screen">
                 {children}
             </main>
 
