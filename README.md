@@ -73,6 +73,26 @@ docker system prune -f
 # Resetar banco dentro do container backend
 docker compose exec backend npx prisma migrate reset --force
 ```
+
+## Testes
+
+O projeto possui uma suíte de testes abrangente para o backend, cobrindo controllers, services e utils.
+
+### Executar Testes
+Para rodar todos os testes:
+```bash
+# Dentro do container backend
+npm test
+```
+
+### Verificar Cobertura
+Para gerar o relatório de cobertura de testes:
+```bash
+# Dentro do container backend
+npm run test:coverage
+```
+
+Atualmente, a cobertura de testes é superior a **80%**.
 ## API Endpoints
 
 ### Autenticação
