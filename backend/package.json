@@ -14,7 +14,10 @@
     "sync:ticketmaster:events": "node scripts/syncTicketmasterEvents.js",
     "diagnose:ticketmaster": "node scripts/diagnoseTicketmaster.js",
     "update:movies:pt": "node scripts/updateMoviesToPortuguese.js",
-    "test:ticketmaster": "node scripts/testTicketmasterAPI.js"
+    "test:ticketmaster": "node scripts/testTicketmasterAPI.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@prisma/client": "^6.18.0",
@@ -26,6 +29,8 @@
   },
   "devDependencies": {
     "nodemon": "^2.0.0",
-    "prisma": "^6.19.0"
+    "prisma": "^6.19.0",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3"
   }
 }
